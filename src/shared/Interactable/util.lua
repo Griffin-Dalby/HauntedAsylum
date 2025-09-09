@@ -47,4 +47,17 @@ helper.verify.prompt_defs = function(prompt_defs: {})
     end
 end
 
+helper.verify.player_table = function(players: {}) : {[number]: Player}
+    local clean = {}
+    for i, inst in pairs(players) do
+        if typeof(inst) ~= 'Instance' or not inst:IsA('Player') then
+            error(`Key in Player Table @ #{i} isn't a player!`)
+            continue; end
+
+        table.insert(clean, inst)
+    end
+
+    return clean
+end
+
 return helper
