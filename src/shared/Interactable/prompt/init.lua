@@ -28,14 +28,19 @@ local signal = sawdust.core.signal
 local prompt = {}
 prompt.__index = prompt
 
-function prompt.new(opts: types._prompt_options): types.InteractablePrompt
+function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_defs): types.InteractablePrompt
     local self = setmetatable({} :: types._self_prompt, prompt)
 
     self.action = opts.action
+    
     self.prompt_defs = opts.prompt_defs
+    for i, v in pairs(inherited_defs) do
+        if not self.prompt_defs[i] then
+            self.prompt_defs[i] = v end
+    end
 
     self.cooldown = opts.cooldown or 0
-    self.require_authoritary = opts.require_authority or false
+    self.require_authority = opts.require_authority or false
 
     self.disabled_clients = {}
 
