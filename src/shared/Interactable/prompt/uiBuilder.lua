@@ -36,7 +36,7 @@ builder.__index = builder
 function builder.new(root_ui: Frame) : types.PromptUiBuilder
     assert(root_ui, `attempt to create a new promptBuilder with a nil root_ui!`)
 
-    local self = setmetatable({} :: types._self_prompt_ui_builder)
+    local self = setmetatable({} :: types._self_prompt_ui_builder, builder)
 
     self.root_ui = root_ui
 
