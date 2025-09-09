@@ -1,0 +1,103 @@
+--[[
+
+    Interactable Prompt
+
+    Griffin Dalby
+    2025.09.07
+
+    This module will provide the behavior for Interactable Prompts.
+
+--]]
+
+--]] Services
+local replicatedStorage = game:GetService('ReplicatedStorage')
+
+--]] Modules
+local types = require(script.Parent.types)
+local util = require(script.Parent.util)
+
+--]] Sawdust
+local sawdust = require(replicatedStorage.Sawdust)
+local signal = sawdust.core.signal
+
+--]] Settings
+--]] Constants
+--]] Variables
+--]] Functions
+--]] Object
+local prompt = {}
+prompt.__index = prompt
+
+function prompt.new(opts: types._prompt_options): types.InteractablePrompt
+    local self = setmetatable({} :: types._self_prompt, prompt)
+
+    self.action = opts.action
+    self.prompt_defs = opts.prompt_defs
+
+    self.cooldown = opts.cooldown or 0
+    self.require_authoritary = opts.require_authority or false
+
+    self.disabled_clients = {}
+
+    --] Emitter
+    local emitter = signal.new()
+    self.triggered = emitter:newSignal()
+
+    self.action_update = emitter:newSignal()
+    self.p_defs_update = emitter:newSignal()
+    self.cooldown_update = emitter:newSignal()
+    self.disabled_clients_update = emitter:newSignal()
+
+    return self
+end
+
+function prompt:setAction(new_action: string)
+    assert(new_action, `attempt to :setAction() to nil!`)
+    assert(type(new_action) == 'string', `attempt to :setAction() to an invalid type "{type(new_action)}"! (expected a string.)`)
+
+    self.action = new_action
+    self.action_update:fire(new_action)
+end
+
+function prompt:setPromptDefs(new_defs: types._prompt_defs)
+    assert(new_defs, `attempt to :setPromptDefs() to nil!`)
+    assert(type(new_defs) == 'table', `attempt to :setPromptDefs() to a non-table!`)
+    util.verify.prompt_defs(new_defs)
+    
+    self.prompt_defs = new_defs
+    self.p_defs_update:fire(new_defs)
+end
+
+function prompt:setCooldown(seconds: number)
+    seconds = seconds or 0
+    assert(type(seconds) == 'number', `attempt to :setCooldown() to an invalid type "{type(seconds)}"! (expected a number.)`)
+
+    self.cooldown = seconds
+    self.cooldown_update:fire(seconds)
+end
+
+function prompt:disableForPlayers(...: Player)
+    local compiled = {...}
+    local players = util.verify.player_table(compiled)
+
+    for _, player in pairs(players) do
+        self.disabled_clients[player] = true
+    end
+    self.disabled_clients_update:fire(self.disabled_clients)
+end
+
+function prompt:enableForPlayers(...: Player)
+    local compiled = {...}
+    local players = util.verify.player_table(compiled)
+
+    for _, player in pairs(players) do
+        self.disabled_clients[player] = nil
+    end
+    self.disabled_clients_update:fire(self.disabled_clients)
+end
+
+function prompt:destroy()
+    
+end
+
+return prompt

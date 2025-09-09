@@ -9,12 +9,15 @@
 
 --]]
 
+local sawdust = require(game:GetService('ReplicatedStorage').Sawdust)
+local signal = sawdust.core.signal
+
 local types = {}
 
 --[[ OPTIONS ]]--
 --#region
 export type _prompt_defs = {
-    interact_gui: Instance?,                               --] What UI to display for interactions
+    interact_gui: PromptUiBuilder?,                        --] What Builder to display for interactions
     interact_bind: { Enum.KeyCode | Enum.UserInputType }?, --] List of binds acceptable
 
     range: number,      --] Minimum distance you must be to activate
@@ -24,9 +27,19 @@ export type _prompt_defs = {
 }
 
 export type _object_options = {
+    object_id: string,
     object_name: string,
+
     instance: Instance,
     prompt_defs: _prompt_defs?,
+}
+
+export type _prompt_options = {
+    action: string,
+    prompt_defs: _prompt_defs,
+
+    require_authority: boolean?,
+    cooldown: number?,
 }
 
 --#endregion
@@ -39,7 +52,77 @@ object.__index = object
 export type _self_object = {}
 export type InteractableObject = typeof(setmetatable({} :: _self_object, object))
 
-function object.new(opts: _object_options) : InteractableObject; end
+function object.new(opts: _object_options) : InteractableObject end
+
+function object:newPrompt(opts: _prompt_options) : InteractablePrompt end
+
+--#endregion
+
+--[[ PROMPT UI & BUILDER ]]--
+--#region
+local prompt_ui = {}
+prompt_ui.__index = prompt_ui
+
+local prompt_builder = {}
+prompt_builder.__index = prompt_builder
+
+export type BuilderEnv = {
+    root: Frame,
+
+    object_name: string,
+    action: string,
+    binding: {code: Enum.KeyCode, type: Enum.UserInputType},
+
+    on_cooldown: boolean,
+    last_cooldown_tick: number,
+}
+
+export type _self_prompt_ui = {
+    env: BuilderEnv,
+    root_ui: Frame,
+
+    update: {
+        object: (object_name: string) -> nil,
+        action: (action: string) -> nil,
+        binding: (code: Enum.KeyCode, type: Enum.UserInputType) -> nil,
+
+        cooldown_change: ((on_cooldown: boolean) -> nil)?,
+        cooldown_tick: ((time_remaining: number) -> nil)?
+    }
+}
+export type PromptUi = typeof(setmetatable({} :: _self_prompt_ui, prompt_ui))
+
+function prompt_ui.new() : PromptUi end
+
+
+
+
+export type _self_prompt_ui_builder = {
+    root_ui: Frame,
+
+    _on_compile: (() -> nil)?,
+
+    _set_object: (object_name: string) -> nil,
+    _set_action: (action: string) -> nil,
+    _set_binding: (code: Enum.KeyCode, type: Enum.UserInputType) -> nil,
+    
+    _no_cooldown: boolean?,
+    _set_cooldown: ((on_cooldown: boolean) -> nil)?,
+    _update_cooldown: ((time_remaining: number) -> nil?),
+}
+export type PromptUiBuilder = typeof(setmetatable({} :: _self_prompt_ui_builder, prompt_builder))
+
+function prompt_builder.new() : PromptUiBuilder end
+
+function prompt_builder:set_object(handler:  (env: BuilderEnv, object_name: string) -> nil): PromptUiBuilder end
+function prompt_builder:set_action(handler:  (env: BuilderEnv, action: string)      -> nil): PromptUiBuilder end
+function prompt_builder:set_binding(handler: (env: BuilderEnv, code: Enum.KeyCode, type: Enum.UserInputType) -> nil): PromptUiBuilder end
+
+function prompt_builder:no_cooldown(): PromptUiBuilder end
+function prompt_builder:set_cooldown(handler:    (env: BuilderEnv, on_cooldown: boolean) -> nil) : PromptUiBuilder end
+function prompt_builder:update_cooldown(handler: (env: BuilderEnv, time_remaining: number) -> nil) : PromptUiBuilder end
+
+function prompt_builder:compile() : PromptUi end
 
 --#endregion
 
@@ -48,10 +131,34 @@ function object.new(opts: _object_options) : InteractableObject; end
 local prompt = {}
 prompt.__index = prompt
 
-export type _self_prompt = {}
+export type _self_prompt = {
+    action: string, --] Action for this Prompt
+    prompt_defs: _prompt_defs,
+
+    cooldown: number,     --] Length of cooldown between each trigger
+    require_authoritary: boolean, --] If the server needs to verify action
+
+    disabled_clients: {}, --] Which clients cannot see/trigger this prompt
+
+    --] Signals
+    triggered: signal.SawdustSignal, --] Fired whenever this prompt is triggered.
+
+    action_update: signal.SawdustSignal,  --] Fired whenever "action" is updated.
+    p_defs_update: signal.SawdustSignal,  --] Fired whenever "prompt_defs" is updated.
+    cooldown_update: signal.SawdustSignal --] Fired whenever "cooldown" is updated.
+}
 export type InteractablePrompt = typeof(setmetatable({} :: _self_prompt, prompt))
 
-function prompt.new(): InteractablePrompt; end
+function prompt.new(opts: _prompt_options): InteractablePrompt end
+
+function prompt:setAction(new_action: string) end
+function prompt:setPromptDefs(new_defs: _prompt_defs) end
+function prompt:setCooldown(seconds: number) end
+
+function prompt:disableForPlayers(...: Player) end
+function prompt:enableForPlayer(...: Player) end
+
+function prompt:destroy() end
 
 --#endregion
 
