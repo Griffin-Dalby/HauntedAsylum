@@ -40,8 +40,8 @@ helper.verify.prompt_defs = function(prompt_defs: {})
             warn(`[verify.prompt_defs] Invalid prompt_def key found! This will be omitted. (Caught: {i})`)
             prompt_defs[i] = nil; continue end
 
-        if not (type(v) ~= type(_dpd_[i]))
-            and not (typeof(v) ~= typeof(_dpd_[i])) then
+        if (type(v) ~= type(_dpd_[i]))
+            and (typeof(v) ~= typeof(_dpd_[i])) then
                 warn(`[verify.prompt_defs] prompt_def key found w/ invalid type! This will be defaulted. ({i} is a {type(v)}/{typeof(v)}; expected {type(_default_prompt_defs[i])}/{typeof(_default_prompt_defs[i])}.`)
                 prompt_defs[i] = _dpd_[i]; continue end
     end
