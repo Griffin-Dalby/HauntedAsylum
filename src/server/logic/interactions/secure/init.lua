@@ -29,16 +29,18 @@ local interactable_cache = cache.findCache('interactable')
 local objects_cache = interactable_cache:createTable('objects')
 
 --]] Settings
+local __debug = false
+
 local flagger_player_data = {
     no_character = true,
 }
 
 local flagger_object_data = {
-    out_of_range = true,
+    
 }
 
 local flagger_prompt_data = {
-
+    out_of_range = true,
 }
 
 --]] Constants
@@ -107,16 +109,13 @@ function secure.new() : InteractionSecurer
             --> Check character
             --#region
             local character = player.Character
+            local root_part = character and character.PrimaryPart or nil
 
-            if not character then
-                player_flagger:setFlag('no_character', true)
-                continue end
+            local player_exists = character~=nil and root_part~=nil --> Character existence check
+            player_flagger:setFlag('no_character', not player_exists)
+            if __debug then print(`no_character: {not player_exists}`) end
+            if not player_exists then continue end
 
-            local root_part = character.PrimaryPart
-            if not root_part then
-                player_flagger:setFlag('no_character', true)
-                continue end
-            player_flagger:setFlag('no_character', false)
             local root_pos = root_part.Position
 
             --#endregion
@@ -138,7 +137,10 @@ function secure.new() : InteractionSecurer
                     end
                     local prompt_flagger = object_flagger:findChild(prompt.action)
 
-                    print(dist<prompt.prompt_defs.range)
+                    local in_range = dist<prompt.prompt_defs.range --> Character in-range check
+                    prompt_flagger:setFlag('out_of_range', not in_range)
+                    if __debug then print(`out_of_range: {not in_range}`) end
+                    if not in_range then continue end
                 end
             end
 
