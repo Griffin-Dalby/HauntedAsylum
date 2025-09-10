@@ -26,6 +26,7 @@ local cache = sawdust.core.cache
 
 --> Cache
 local interactable_cache = cache.findCache('interactable')
+local objects_cache = interactable_cache:createTable('objects')
 
 --]] Settings
 local flagger_player_data = {
@@ -98,10 +99,6 @@ function secure.new() : InteractionSecurer
     end
 
     --]] Runtimes
-    local objects_cache = interactable_cache:hasEntry('objects') 
-        and interactable_cache:findTable('objects')
-        or interactable_cache:createTable('objects')
-
     self.runtime = {}
     self.runtime.physical = stagger(.33, function(deltaTime)
         for _, player: Player in pairs(players:GetPlayers()) do
