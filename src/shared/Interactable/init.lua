@@ -26,7 +26,10 @@ local cache = sawdust.core.cache
 
 --> Cache
 local interactable_cache = cache.findCache('interactable')
-local objects_cache = interactable_cache:createTable('objects')
+local objects_cache = interactable_cache:hasEntry('objects')
+    and interactable_cache:findTable('objects')
+    or interactable_cache:createTable('objects')
+
 local prompt_ui_cache = interactable_cache:createTable('prompt.ui')
 
 --]] Settings
