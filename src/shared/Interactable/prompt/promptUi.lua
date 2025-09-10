@@ -11,12 +11,25 @@
 --]]
 
 --]] Services
+local runService = game:GetService('RunService')
+local players = game:GetService('Players')
+
 --]] Modules
 local types = require(script.Parent.Parent.types)
 
 --]] Sawdust
 --]] Settings
 --]] Constants
+local is_client = runService:IsClient()
+
+--> Index player
+local player = is_client and players.LocalPlayer
+local player_ui = is_client and player.PlayerGui
+
+local prompt_container = is_client and player_ui:WaitForChild('__prompts')
+
+local camera = workspace.CurrentCamera
+
 --]] Variables
 --]] Functions
 --]] Module
@@ -50,6 +63,29 @@ function promptUi.new(builder_data: types.PromptUiBuilder) : types.PromptUi
     }
 
     return self
+end
+
+function promptUi:render(target: BasePart, information: {})
+    assert(self.__runtime==nil, `PromptUI visualization runtime already in use!`)
+
+    self.__runtime = runService.Heartbeat:Connect(function()
+        self.root_ui.Parent = prompt_container
+        
+        local vector, onScreen = camera:WorldToViewportPoint(target.Position)
+        self.root_ui.Visible = onScreen
+        if not onScreen then return end
+
+        self.root_ui.Position = UDim2.new(0, vector.X, 0, vector.Y)
+    end)
+end
+function promptUi:unrender()
+    if self.__runtime then
+        self.__runtime:Disconnect()
+        self.__runtime = nil
+    end
+
+    self.root_ui.Parent = script
+    self.root_ui.Visible = false
 end
 
 function promptUi:set_object(object_name: string)
