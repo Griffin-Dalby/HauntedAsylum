@@ -112,11 +112,11 @@ end
 --[[ flagger:isClean(): boolean
     Returns true if all flags are false. ]]
 function flagger:isClean(): boolean
-    local is_clean = false
+    local is_clean = true
 
     local function check_tbl(t: {})
-        for _, v in pairs(t.flags) do
-            if v~=true then
+        for i, v in pairs(t.flags) do
+            if v==true then
                 is_clean = false
                 break end
         end
