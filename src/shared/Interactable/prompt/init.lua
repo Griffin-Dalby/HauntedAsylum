@@ -36,7 +36,9 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
 
     self.action = opts.action
     
-    self.prompt_defs = opts.prompt_defs
+    self.prompt_defs = opts.prompt_defs or {}
+    util.verify.prompt_defs(self.prompt_defs)
+
     if inherited_defs then
         for i, v in pairs(inherited_defs) do
             if not self.prompt_defs[i] then
