@@ -46,6 +46,11 @@ helper.verify.prompt_defs = function(prompt_defs: {})
                 warn(`[verify.prompt_defs] prompt_def key found w/ invalid type! This will be defaulted. ({i} is a {type(v)}/{typeof(v)}; expected {type(_default_prompt_defs[i])}/{typeof(_default_prompt_defs[i])}.`)
                 prompt_defs[i] = _dpd_[i]; continue end
     end
+
+    for i, v in pairs(_dpd_) do
+        if not prompt_defs[i] then
+            prompt_defs[i] = v end
+    end
 end
 
 helper.verify.player_table = function(players: {}) : {[number]: Player}
