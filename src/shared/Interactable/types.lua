@@ -49,7 +49,13 @@ export type _prompt_options = {
 local object = {}
 object.__index = object
 
-export type _self_object = {}
+export type _self_object = {
+    object_id: string,
+    object_name: string,
+
+    instance: Instance,
+    prompt_defs: _prompt_defs?
+}
 export type InteractableObject = typeof(setmetatable({} :: _self_object, object))
 
 function object.new(opts: _object_options) : InteractableObject end
@@ -94,8 +100,12 @@ export type PromptUi = typeof(setmetatable({} :: _self_prompt_ui, prompt_ui))
 
 function prompt_ui.new() : PromptUi end
 
+function prompt_ui:set_object(object_name: string) end
+function prompt_ui:set_action(action: string) end
+function prompt_ui:set_binding(key: Enum.KeyCode, type: Enum.UserInputType) end
 
-
+function prompt_ui:set_cooldown(on_cooldown: boolean) end
+function prompt_ui:cooldown_tick(time_remaining: number) end
 
 export type _self_prompt_ui_builder = {
     root_ui: Frame,
@@ -134,6 +144,7 @@ prompt.__index = prompt
 export type _self_prompt = {
     action: string, --] Action for this Prompt
     prompt_defs: _prompt_defs,
+    prompt_ui: PromptUi,
 
     cooldown: number,     --] Length of cooldown between each trigger
     require_authoritary: boolean, --] If the server needs to verify action
@@ -143,9 +154,19 @@ export type _self_prompt = {
     --] Signals
     triggered: signal.SawdustSignal, --] Fired whenever this prompt is triggered.
 
-    action_update: signal.SawdustSignal,  --] Fired whenever "action" is updated.
-    p_defs_update: signal.SawdustSignal,  --] Fired whenever "prompt_defs" is updated.
-    cooldown_update: signal.SawdustSignal --] Fired whenever "cooldown" is updated.
+    action_update: signal.SawdustSignal,   --] Fired whenever "action" is updated.
+    p_defs_update: signal.SawdustSignal,   --] Fired whenever "prompt_defs" is updated.
+    cooldown_update: signal.SawdustSignal, --] Fired whenever "cooldown" is updated.
+
+    
+    --] Runtime
+    __runtime: RunService,
+    
+    -- Client Runtime
+    ui: PromptUi,
+
+    -- Server Runtime
+    -- eligible_clients: {}
 }
 export type InteractablePrompt = typeof(setmetatable({} :: _self_prompt, prompt))
 
