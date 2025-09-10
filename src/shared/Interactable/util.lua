@@ -14,7 +14,6 @@
 --]] Modules
 --]] Settings
 local _default_prompt_defs = {
-    interact_gui = '',
     interact_bind = { Enum.KeyCode.E, Enum.KeyCode.ButtonX },
 
     range = 7.5,
@@ -36,6 +35,8 @@ helper.verify.prompt_defs = function(prompt_defs: {})
     local _dpd_ = _default_prompt_defs
 
     for i, v in pairs(prompt_defs) do
+        if i=='interact_gui' then continue end
+
         if not _dpd_[i] then
             warn(`[verify.prompt_defs] Invalid prompt_def key found! This will be omitted. (Caught: {i})`)
             prompt_defs[i] = nil; continue end

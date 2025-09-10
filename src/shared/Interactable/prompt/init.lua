@@ -11,6 +11,7 @@
 
 --]] Services
 local replicatedStorage = game:GetService('ReplicatedStorage')
+local runService = game:GetService('RunService')
 
 --]] Modules
 local types = require(script.Parent.types)
@@ -22,6 +23,8 @@ local signal = sawdust.core.signal
 
 --]] Settings
 --]] Constants
+local isClient = runService:IsClient()
+
 --]] Variables
 --]] Functions
 --]] Object
@@ -39,6 +42,9 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
             self.prompt_defs[i] = v end
     end
 
+    assert(self.prompt_defs.interact_gui, `There was no interact_gui passed to prompt.new() PromptDefs!`)
+    self.prompt_ui = self.prompt_defs.interact_gui:compile()
+
     self.cooldown = opts.cooldown or 0
     self.require_authority = opts.require_authority or false
 
@@ -53,6 +59,15 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
     self.cooldown_update = emitter:newSignal()
     self.disabled_clients_update = emitter:newSignal()
 
+    --] Runtimes
+    if isClient then
+        self.ui = self.prompt_defs.interact_gui:compile()
+        self.__runtime = runService.Heartbeat:Connect(function(deltaTime)
+            
+        end)
+    end
+    
+    
     return self
 end
 
@@ -62,6 +77,7 @@ function prompt:setAction(new_action: string)
 
     self.action = new_action
     self.action_update:fire(new_action)
+    self.ui:set_action(new_action)
 end
 
 function prompt:setPromptDefs(new_defs: types._prompt_defs)
