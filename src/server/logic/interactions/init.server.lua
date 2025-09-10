@@ -31,3 +31,11 @@ local world_channel = networking.getChannel('world')
 --]] Script
 
 local secure = __secure.new()
+
+--]] Generate Objects
+for _, object_data: ModuleScript in pairs(script.objects:GetChildren()) do
+    if not object_data:IsA('ModuleScript') then continue end
+    local generator = require(object_data)
+
+    generator()
+end
