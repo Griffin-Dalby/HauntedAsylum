@@ -54,7 +54,9 @@ export type _self_object = {
     object_name: string,
 
     instance: Instance,
-    prompt_defs: _prompt_defs?
+    prompt_defs: _prompt_defs?,
+
+    prompts: {[string]: InteractablePrompt}
 }
 export type InteractableObject = typeof(setmetatable({} :: _self_object, object))
 
