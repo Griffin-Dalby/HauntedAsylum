@@ -23,7 +23,7 @@ local signal = sawdust.core.signal
 
 --]] Settings
 --]] Constants
-local isClient = runService:IsClient()
+local is_client = runService:IsClient()
 
 --]] Variables
 --]] Functions
@@ -44,8 +44,10 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
         end
     end
 
-    assert(self.prompt_defs.interact_gui, `There was no interact_gui passed to prompt.new() PromptDefs!`)
-    self.prompt_ui = self.prompt_defs.interact_gui:compile()
+    if is_client then
+        assert(self.prompt_defs.interact_gui, `There was no interact_gui passed to prompt.new() PromptDefs!`)
+        self.prompt_ui = self.prompt_defs.interact_gui:compile()
+    end
 
     self.cooldown = opts.cooldown or 0
     self.require_authority = opts.require_authority or false
@@ -62,7 +64,7 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
     self.disabled_clients_update = emitter:newSignal()
 
     --] Runtimes
-    if isClient then
+    if is_client then
         self.ui = self.prompt_defs.interact_gui:compile()
         self.__runtime = runService.Heartbeat:Connect(function(deltaTime)
             
