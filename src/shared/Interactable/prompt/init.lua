@@ -20,6 +20,11 @@ local util = require(script.Parent.util)
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 local signal = sawdust.core.signal
+local cache = sawdust.core.cache
+
+-- Cache
+local interactable_cache = cache.findCache('interactable')
+local prompt_ui_cache = interactable_cache:createTable('prompt.ui')
 
 --]] Settings
 --]] Constants
@@ -31,9 +36,10 @@ local is_client = runService:IsClient()
 local prompt = {}
 prompt.__index = prompt
 
-function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_defs): types.InteractablePrompt
+function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_defs & { instance: Instance }): types.InteractablePrompt
     local self = setmetatable({} :: types._self_prompt, prompt)
 
+    self.prompt_id = opts.prompt_id
     self.action = opts.action
     
     self.prompt_defs = opts.prompt_defs or {}
@@ -47,14 +53,29 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
     end
 
     if is_client then
-        assert(self.prompt_defs.interact_gui, `There was no interact_gui passed to prompt.new() PromptDefs!`)
-        self.prompt_ui = self.prompt_defs.interact_gui:compile()
+        local i_gui = self.prompt_defs.interact_gui
+
+        assert(i_gui, `There was no interact_gui passed to prompt.new() PromptDefs!`)
+        
+        local builder
+        if type(i_gui) == 'string' then
+            assert(prompt_ui_cache:hasEntry(i_gui),
+                `Failed to find PromptUi in cache w/ ID "{i_gui}"!`)
+            builder = prompt_ui_cache:getValue(i_gui)
+            print(builder)
+        else  
+            builder = i_gui
+        end
+
+        assert(builder, `There was no PromptUI builder found! Abandoning prompt creation.`)
+        self.interact_gui = builder
     end
 
     self.cooldown = opts.cooldown or 0
     self.require_authority = opts.require_authority or false
 
     self.disabled_clients = {}
+    self.enabled = false
 
     --] Emitter
     local emitter = signal.new()
@@ -65,18 +86,35 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
     self.cooldown_update = emitter:newSignal()
     self.disabled_clients_update = emitter:newSignal()
 
-    --] Runtimes
+    --] Setup UI
     if is_client then
-        self.ui = self.prompt_defs.interact_gui:compile()
-        self.__runtime = runService.Heartbeat:Connect(function(deltaTime)
-            
-        end)
+        self.prompt_ui = self.interact_gui:compile()
+
+        self.prompt_ui:set_object(self.prompt_defs.object_name)
+        self.prompt_ui:set_action(opts.action)
     end
     
     
     return self
 end
 
+--[[ VISIBILITY ]]--
+function prompt:enable()
+    self.enabled = true
+    if is_client then
+        self.prompt_ui:render(self.prompt_defs.instance)
+    end
+end
+
+function prompt:disable()
+    self.enabled = false
+    if is_client then
+        self.prompt_ui:unrender()
+    end
+end
+
+--[[ DATA CONTROLS ]]--
+--#region
 function prompt:setAction(new_action: string)
     assert(new_action, `attempt to :setAction() to nil!`)
     assert(type(new_action) == 'string', `attempt to :setAction() to an invalid type "{type(new_action)}"! (expected a string.)`)
@@ -126,5 +164,7 @@ end
 function prompt:destroy()
     
 end
+
+--#endregion
 
 return prompt
