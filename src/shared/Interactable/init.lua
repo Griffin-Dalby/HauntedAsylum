@@ -81,16 +81,16 @@ end
 --[[ interactable.findObject(object_name: string) : InteractableObject?
     Attempt to locate a specific object saved in the registrar.
     If one is found, it will be returned as an InteractableObject. ]]
-function interactable.findObject(object_name: string) : types.InteractableObject?
-    assert(object_name, `Missing argument #1 for .findObject()! "object_name"`)
-    assert(type(object_name) == 'string', 
-        `object_name is of type "{type(object_name)}", it was expected to be a string!`)
+function interactable.findObject(object_id: string) : types.InteractableObject?
+    assert(object_id, `Missing argument #1 for .findObject()! "object_id"`)
+    assert(type(object_id) == 'string', 
+        `object_id is of type "{type(object_id)}", it was expected to be a string!`)
 
-    if not objects_cache:hasEntry(object_name) then
-        warn(`[{script.Name}] Failed to find object w/ name "{object_name}"!`)
+    if not objects_cache:hasEntry(object_id) then
+        warn(`[{script.Name}] Failed to find object w/ id "{object_id}"!`)
         return false; end
     
-    return objects_cache:getValue(object_name)
+    return objects_cache:getValue(object_id)
 end
 
 --[[ PROMPT UI BUILDER ]]--

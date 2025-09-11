@@ -90,8 +90,8 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
                     :finally(function() finished = true end)
                     :catch(function(err)
                         warn(`[{script.Name}] An issue occured while authorizing prompt! ({self.prompt_defs.object_id}.{self.prompt_id})`)
-                        if err then
-                            warn(`[{script.Name}] A message was provided: {err}`)
+                        if err[1] then
+                            warn(`[{script.Name}] A message was provided: {err[1]}`)
                         end
                     end)
             repeat task.wait(0) until finished

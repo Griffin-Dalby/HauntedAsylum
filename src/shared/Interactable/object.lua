@@ -76,8 +76,8 @@ function object.new(opts: types._object_options): types.InteractableObject
                 :finally(function() finished = true end)
                 :catch(function(err)
                     warn(`[{script.Name}] An issue occured while authorizing object! ({self.object_id})`)
-                    if err then
-                        warn(`[{script.Name}] A message was provided: {err}`)
+                    if err[1] then
+                        warn(`[{script.Name}] A message was provided: {err[1]}`)
                     end
                 end)
         repeat task.wait(0) until finished

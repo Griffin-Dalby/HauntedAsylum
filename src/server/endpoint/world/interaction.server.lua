@@ -14,6 +14,9 @@
 local replicatedStorage = game:GetService('ReplicatedStorage')
 
 --]] Modules
+local interactable = require(replicatedStorage.Shared.Interactable)
+local intbl_types  = require(replicatedStorage.Shared.Interactable.types)
+
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 
@@ -23,20 +26,42 @@ local networking = sawdust.core.networking
 local world_channel = networking.getChannel('world')
 
 --]] Settings
+local __debug = true
+
 --]] Constants
 --]] Variables
 --]] Functions
+function locate_object(object_id)
+    local s, object = pcall(interactable.findObject, object_id)
+    if not s then
+        warn(`[{script.Name}] Failure locating object for authorization!`)
+        if object then
+            warn(`[{script.Name}] A message was provided: {object}`) end
+        return false, 'failure locating object' end
+
+    return object
+end
+
 --]] Script
 
 local auth_handler = {
-    ['object'] = function(req, res)
+    ['object'] = function(data)
+        local object_id = unpack(data) :: string
+        local res, msg = locate_object(object_id)
         
-        return true
+        return (if res then true else false), msg
     end,
 
-    ['prompt'] = function()
-        
-        return true
+    ['prompt'] = function(data)
+        local object_id:string, prompt_id:string = unpack(data)
+        local res, msg = locate_object(object_id)
+
+        if not res then
+            return res, msg end
+        local object = res :: intbl_types.InteractableObject
+        local found_prompt = object.prompts[prompt_id]
+
+        return (if found_prompt then true else false), (if found_prompt then nil else 'failure locating prompt')
     end
 }
 
@@ -47,6 +72,16 @@ world_channel.interaction:route()
             or not auth_handler[auth_type] then
             res.reject(`Invalid auth_type!`); return end
 
-        res.data(auth_handler[auth_type](req))
-        res.send()
+        table.remove(req.data, 1)
+        local success, msg = auth_handler[auth_type](req.data)
+
+        if __debug then
+            print(`[{script.Name}] {auth_type} authorized: {success} | {table.concat(req.data, '.')}`)
+        end
+        if success then
+            res.data(true)
+            res.send()
+        else
+            res.reject(msg)
+        end
     end)
