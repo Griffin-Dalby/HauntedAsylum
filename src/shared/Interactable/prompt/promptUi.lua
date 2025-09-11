@@ -56,10 +56,10 @@ function promptUi.new(builder_data: types.PromptUiBuilder) : types.PromptUi
         action  = wrap_f(builder_data._set_action),
         binding = wrap_f(builder_data._set_binding),
         
-        set_cooldown  = builder_data._no_cooldown
-            and nil or wrap_f(builder_data._set_cooldown),
-        cooldown_tick = builder_data._no_cooldown
-            and nil or wrap_f(builder_data._update_cooldown),
+        set_cooldown  = if not builder_data._no_cooldown then
+            wrap_f(builder_data._set_cooldown) else nil,
+        cooldown_tick = if not builder_data._no_cooldown then
+            wrap_f(builder_data._update_cooldown) else nil,
     }
 
     return self
