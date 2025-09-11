@@ -106,6 +106,8 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
     self.disabled_clients = {}
     self.enabled = false
 
+    self.active_cooldowns = {}
+
     --] Emitter
     local emitter = signal.new()
     self.pre_trigger = emitter:newSignal()
@@ -134,9 +136,20 @@ function prompt:trigger(triggered_player: Player?)
     self.pre_trigger:fire(self)
 
     if is_client then
+        local finished, success = false, false --> Cache networking
+
+        if self.active_cooldowns['local'] then return end
+        self.active_cooldowns['local'] = true
+        self.prompt_ui.update.set_cooldown(true)
+        task.delay(self.cooldown, function()
+            if finished and not success then
+                return end
+            self.active_cooldowns['local'] = false
+        self.prompt_ui.update.set_cooldown(false)
+        end)
+
         self.prompt_ui.update.pre_trigger()
         if self.authorized then
-            local finished, success = false, false
             local fail_reason
             world_channel.interaction:with()
                 :intent('trigger')
@@ -150,6 +163,9 @@ function prompt:trigger(triggered_player: Player?)
                         if err[1] then
                             fail_reason = err[1]
                             warn(`A message was provided: {err[1]}`) end
+
+                        self.active_cooldowns['local'] = false
+                        self.prompt_ui.update.set_cooldown(false)
                     end)
 
             repeat task.wait(0) until finished
@@ -158,9 +174,15 @@ function prompt:trigger(triggered_player: Player?)
 
             
         end
-
-        
     else
+        if self.active_cooldowns[triggered_player] then return false end
+        if self.cooldown > 0 then
+            self.active_cooldowns[triggered_player] = true
+            task.delay(self.cooldown, function()
+                self.active_cooldowns[triggered_player] = false
+            end)
+        end
+
         self.triggered:fire(self, triggered_player)
 
         return true

@@ -52,13 +52,18 @@ return function ()
         end)
 
         :set_cooldown(function(env, on_cooldown)
-            env.root.bind.BackgroundColor3 = on_cooldown and Color3.fromRGB(45, 45, 45) or Color3.fromRGB(75, 75, 75)
-            if not on_cooldown then
-                env.root.bind.Label.Text = env.binding.code.Name
-            end
+            env.root.bind.ImageColor3 = on_cooldown and Color3.fromRGB(95, 95, 95) or Color3.fromRGB(75, 75, 75)
+            env.root.bind.ImageTransparency = on_cooldown and .85 or .25
+            env.root.bind.BackgroundTransparency = on_cooldown and .75 or .25
+            env.root.bind.Label.TextTransparency = on_cooldown and .75 or 0
+            
+            -- if not on_cooldown then
+            --     print(env)
+            --     env.root.bind.Label.Text = env
+            -- end
         end)
         :update_cooldown(function(env, time_remaining)
-            env.root.bind.Text = tostring(time_remaining)
+            -- env.root.bind.Text = tostring(time_remaining)
         end)
 
     return p_ui

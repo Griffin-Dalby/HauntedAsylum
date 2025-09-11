@@ -31,6 +31,8 @@ return function ()
     local test_prompt = test_object:newPrompt{
         prompt_id = 'interact',
         action = 'Interact',
+        cooldown = 1,
+
     }
     test_prompt.triggered:connect(function()
         print('client trigger')
