@@ -12,6 +12,7 @@
 
 --]] Services
 local replicatedStorage = game:GetService('ReplicatedStorage')
+local userInputService = game:GetService('UserInputService')
 local runService = game:GetService('RunService')
 local players = game:GetService('Players')
 
@@ -21,6 +22,8 @@ local __interactable = replicatedStorage.Shared.Interactable
 local interactable = require(__interactable)
 local __secure = require(__interactable.secure)
 local __flagger = require(__interactable.secure.flagger)
+
+local __platform = require(script.platform)
 
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
@@ -32,6 +35,8 @@ local networking = sawdust.core.networking
 --]] Settings
 --]] Constants
 --]] Variables
+local l_objects = {} --> TODO: Double-check if this is needed, and refactor accordingly.
+
 --]] Functions
 local function count_dir(d: {})
     local i=0
@@ -40,7 +45,6 @@ local function count_dir(d: {})
 end
 
 --]] Script
-
 local secure = __secure.new()
 
 --> Setup PromptUIs
@@ -54,9 +58,8 @@ end
 --> Setup Objects
 for _, object_data: ModuleScript in pairs(script.objects:GetChildren()) do
     if not object_data:IsA('ModuleScript') then continue end
-    local generator = require(object_data)
-
-    generator()
+    local gen_obj = require(object_data)()
+    l_objects[gen_obj.object_id] = gen_obj
 end
 
 --> Prompt Enabler Runtime
@@ -114,4 +117,14 @@ runService.Heartbeat:Connect(function(deltaTime)
     for _, prompt in pairs(updates) do
         prompt:setTargeted(false)
     end
+end)
+
+--> Prompt Input Processor
+local platform = __platform.new()
+
+userInputService.InputBegan:Connect(function(key, gp)
+    if gp then return end
+    if selected_prompt[2]==nil then return end
+
+    
 end)
