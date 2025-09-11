@@ -30,7 +30,7 @@ local objects_cache = interactable_cache:hasEntry('objects')
     and interactable_cache:findTable('objects')
     or interactable_cache:createTable('objects')
 
-local prompt_ui_cache = interactable_cache:createTable('prompt.ui')
+local prompt_ui_cache = interactable_cache:findTable('prompt.ui')
 
 --]] Settings
 --]] Constants
@@ -83,7 +83,7 @@ end
     If one is found, it will be returned as an InteractableObject. ]]
 function interactable.findObject(object_name: string) : types.InteractableObject?
     assert(object_name, `Missing argument #1 for .findObject()! "object_name"`)
-    assert(type(object_name) ~= 'string', 
+    assert(type(object_name) == 'string', 
         `object_name is of type "{type(object_name)}", it was expected to be a string!`)
 
     if not objects_cache:hasEntry(object_name) then
