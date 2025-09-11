@@ -19,14 +19,20 @@ local util = require(script.Parent.util)
 
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
+local networking = sawdust.core.networking
 local signal = sawdust.core.signal
 local cache = sawdust.core.cache
+
+-- Networking
+local world_channel = networking.getChannel('world')
 
 -- Cache
 local interactable_cache = cache.findCache('interactable')
 local prompt_ui_cache = interactable_cache:createTable('prompt.ui')
 
 --]] Settings
+local __debug = true
+
 --]] Constants
 local is_client = runService:IsClient()
 
@@ -53,6 +59,7 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
     end
 
     if is_client then
+        --> Locate Builder
         local i_gui = self.prompt_defs.interact_gui
 
         assert(i_gui, `There was no interact_gui passed to prompt.new() PromptDefs!`)
@@ -62,13 +69,35 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
             assert(prompt_ui_cache:hasEntry(i_gui),
                 `Failed to find PromptUi in cache w/ ID "{i_gui}"!`)
             builder = prompt_ui_cache:getValue(i_gui)
-            print(builder)
         else  
             builder = i_gui
         end
 
         assert(builder, `There was no PromptUI builder found! Abandoning prompt creation.`)
         self.interact_gui = builder
+
+        --> Authorize
+        if self.prompt_defs.authorized then
+            if __debug then print(`[{script.Name}] Attempting to authorize prompt: {self.prompt_defs.object_id}.{self.prompt_id}`) end
+
+            local finished, success = false, false
+            world_channel.interaction:with()
+                :intent('auth')
+                :data('prompt', self.prompt_defs.object_id, self.prompt_id)
+                :timeout(3)
+                :invoke()
+                    :andThen(function() success = true end)
+                    :finally(function() finished = true end)
+                    :catch(function(err)
+                        warn(`[{script.Name}] An issue occured while authorizing prompt! ({self.prompt_defs.object_id}.{self.prompt_id})`)
+                        if err then
+                            warn(`[{script.Name}] A message was provided: {err}`)
+                        end
+                    end)
+            repeat task.wait(0) until finished
+            if not success then return end
+            if __debug then print(`[{script.Name}] Successfully authorized prompt: {self.prompt_defs.object_id}.{self.prompt_id}`) end
+        end
     end
 
     self.cooldown = opts.cooldown or 0

@@ -20,7 +20,14 @@ local promptBuilder = require(script.Parent.prompt.uiBuilder)
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 
+local networking = sawdust.core.networking
+
+--> Networking
+local world_channel = networking.getChannel('world')
+
 --]] Settings
+local __debug = true
+
 --]] Constants
 --]] Variables
 --]] Functions
@@ -49,10 +56,34 @@ function object.new(opts: types._object_options): types.InteractableObject
     self.instance = opts.instance
 
     self.prompt_defs = opts.prompt_defs or {}
-    self.prompt_defs.instance = self.instance
+    self.prompt_defs.instance = self.instance --> Pass these into inherited prompt_defs
     self.prompt_defs.object_name = self.object_name
+    self.prompt_defs.object_id = self.object_id
 
     self.prompts = {}
+
+    --> Authorize
+    if opts.authorized then
+        if __debug then print(`[{script.Name}] Attempting to authorize object: {self.object_id}`) end
+
+        local finished, success = false, false
+        world_channel.interaction:with()
+            :intent('auth')
+            :data('object', self.object_id)
+            :timeout(3)
+            :invoke()
+                :andThen(function() success = true end)
+                :finally(function() finished = true end)
+                :catch(function(err)
+                    warn(`[{script.Name}] An issue occured while authorizing object! ({self.object_id})`)
+                    if err then
+                        warn(`[{script.Name}] A message was provided: {err}`)
+                    end
+                end)
+        repeat task.wait(0) until finished
+        if not success then return end
+        if __debug then print(`[{script.Name}] Successfully authorized object: {self.object_id}`) end
+    end
 
     return self
 end

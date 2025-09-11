@@ -20,16 +20,18 @@ export type _prompt_defs = {
     interact_gui: PromptUiBuilder?,                        --] What Builder to display for interactions
     interact_bind: { Enum.KeyCode | Enum.UserInputType }?, --] List of binds acceptable
 
-    range: number,      --] Minimum distance you must be to activate
-    raycast: boolean,   --] If true, the object instance must be in sight to interact.
+    range: number,       --] Minimum distance you must be to activate
+    raycast: boolean,    --] If true, the object instance must be in sight to interact.
+    authorized: boolean, --] If true, the client will contact the server to verify/parse interaction.
 
-    hold_time: number?, --] How long the bind must be held to activate, or 0 for tap.
+    hold_time: number?,  --] How long the bind must be held to activate, or 0 for tap.
 }
 
 export type _object_options = {
     object_id: string,
     object_name: string,
 
+    authorized: boolean,
     instance: Instance,
     prompt_defs: _prompt_defs?,
 }
@@ -39,7 +41,6 @@ export type _prompt_options = {
     action: string,
     prompt_defs: _prompt_defs,
 
-    require_authority: boolean?,
     cooldown: number?,
 }
 
@@ -160,8 +161,8 @@ export type _self_prompt = {
     prompt_defs: _prompt_defs,
     prompt_ui: PromptUi?,
 
-    cooldown: number,     --] Length of cooldown between each trigger
-    require_authoritary: boolean, --] If the server needs to verify action
+    cooldown: number,    --] Length of cooldown between each trigger
+    authorized: boolean, --] If the server needs to verify/parse action
 
     disabled_clients: {}, --] Which clients cannot see/trigger this prompt
     enabled: boolean,

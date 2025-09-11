@@ -18,6 +18,7 @@ local _default_prompt_defs = {
 
     range = 7.5,
     raycast = true,
+    authorized = true,
 
     hold_time = 1,
 }
