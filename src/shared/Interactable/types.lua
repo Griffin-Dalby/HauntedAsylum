@@ -173,17 +173,24 @@ export type _self_prompt = {
     enabled: boolean,
 
     --] Signals
-    triggered: signal.SawdustSignal, --] Fired whenever this prompt is triggered.
+    pre_trigger: signal.SawdustSignal,  --] Fired whenever this prompt is triggered, before authorization.
+    post_trigger: signal.SawdustSignal, --] Fired whenever this prompt is triggered, after authorization.
 
     action_update: signal.SawdustSignal,   --] Fired whenever "action" is updated.
     targeted_update: signal.SawdustSignal, --] Fired whenever "targeted" is updated.
     p_defs_update: signal.SawdustSignal,   --] Fired whenever "prompt_defs" is updated.
     cooldown_update: signal.SawdustSignal, --] Fired whenever "cooldown" is updated.
-    
+    disabled_clients_update: signal.SawdustSignal, --] Fired whenever "disabled_clients" is updated.
+
 }
 export type InteractablePrompt = typeof(setmetatable({} :: _self_prompt, prompt))
 
 function prompt.new(opts: _prompt_options): InteractablePrompt end
+
+function prompt:trigger(triggered_player: Player) end
+
+function prompt:enable() end
+function prompt:disable() end
 
 function prompt:setAction(new_action: string) end
 function prompt:setTargeted(targeted: boolean) end

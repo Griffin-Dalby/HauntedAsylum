@@ -14,7 +14,7 @@
 --]] Modules
 --]] Settings
 local _default_prompt_defs = {
-    interact_bind = { Enum.KeyCode.E, Enum.KeyCode.ButtonX },
+    interact_bind = { desktop = Enum.KeyCode.E, console = Enum.KeyCode.ButtonX },
 
     range = 7.5,
     raycast = true,

@@ -21,6 +21,11 @@ local intbl_types  = require(replicatedStorage.Shared.Interactable.types)
 local sawdust = require(replicatedStorage.Sawdust)
 
 local networking = sawdust.core.networking
+local cache = sawdust.core.cache
+
+--> Cache
+local interactable_cache = cache.findCache('interactable')
+local objects_cache = interactable_cache:findTable('objects')
 
 --> Networking
 local world_channel = networking.getChannel('world')
@@ -62,7 +67,7 @@ local auth_handler = {
         local found_prompt = object.prompts[prompt_id]
 
         return (if found_prompt then true else false), (if found_prompt then nil else 'failure locating prompt')
-    end
+    end,
 }
 
 world_channel.interaction:route()
@@ -83,5 +88,27 @@ world_channel.interaction:route()
             res.send()
         else
             res.reject(msg)
+        end
+    end)
+
+    :on('trigger', function(req, res)
+        local object_id:string, prompt_id:string = unpack(req.data)
+    
+        if not object_id or type(object_id)~='string'
+            or not objects_cache:hasEntry(object_id) then
+            res.reject('Invalid object_id'); return end
+        local object = interactable.findObject(object_id)
+
+        if not prompt_id or type(prompt_id)~='string'
+            or not object.prompts[prompt_id] then
+            res.reject('Invalid prompt_id'); return end
+        local prompt = object.prompts[prompt_id]
+        local success, message = prompt:trigger(req.caller)
+
+        if success then
+            res.data(true)
+            res.send()
+        else
+            res.reject(message)
         end
     end)

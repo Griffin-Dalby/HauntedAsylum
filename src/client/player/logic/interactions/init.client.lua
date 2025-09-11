@@ -22,6 +22,7 @@ local __interactable = replicatedStorage.Shared.Interactable
 local interactable = require(__interactable)
 local __secure = require(__interactable.secure)
 local __flagger = require(__interactable.secure.flagger)
+local __intbl_types = require(__interactable.types)
 
 local __platform = require(script.platform)
 
@@ -125,7 +126,17 @@ local platform = __platform.new()
 
 userInputService.InputBegan:Connect(function(key, gp)
     if gp then return end
+
+    local prompt = selected_prompt[2] :: __intbl_types.InteractablePrompt
     if selected_prompt[2]==nil then return end
 
-    
+    --> Check bind
+    local binds = selected_prompt[2].prompt_defs.interact_bind
+    local platform_bind = binds[platform.platform]
+    if (key.KeyCode~=platform_bind)
+        and (key.UserInputType~=platform_bind) then
+            return end
+            
+    --> Trigger prompt
+    prompt:trigger()
 end)

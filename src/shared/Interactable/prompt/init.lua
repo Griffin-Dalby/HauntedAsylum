@@ -101,14 +101,15 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
     end
 
     self.cooldown = opts.cooldown or 0
-    self.require_authority = opts.require_authority or false
+    self.authorized = self.prompt_defs.authorized or true
 
     self.disabled_clients = {}
     self.enabled = false
 
     --] Emitter
     local emitter = signal.new()
-    self.triggered = emitter:newSignal()
+    self.pre_trigger = emitter:newSignal()
+    self.post_trigger = emitter:newSignal()
 
     self.action_update = emitter:newSignal()
     self.targeted_update = emitter:newSignal()
@@ -124,8 +125,41 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
         self.prompt_ui:set_action(opts.action)
     end
     
-    
     return self
+end
+
+function prompt:trigger(triggered_player: Player?)
+    local object_id, prompt_id = self.prompt_defs.object_id, self.prompt_id
+
+    self.pre_trigger:fire(self)
+
+    if is_client then
+        if self.authorized then
+            local finished, success = false, false
+            world_channel.interaction:with()
+                :intent('trigger')
+                :data(object_id, prompt_id)
+                :timeout(3)
+                :invoke()
+                    :andThen(function() success = true end)
+                    :finally(function() finished = true end)
+                    :catch(function(err)
+                        error(`An issue occured while triggering prompt! ({object_id}.{prompt_id})`)
+                        if err[1] then
+                            warn(`A message was provided: {err[1]}`) end
+                    end)
+
+            repeat task.wait(0) until finished
+        end
+
+        
+    else
+        self.post_trigger:fire(self, triggered_player)
+
+        return true
+    end
+
+    self.post_trigger:fire(self)
 end
 
 --[[ VISIBILITY ]]--

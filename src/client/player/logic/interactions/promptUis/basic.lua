@@ -44,6 +44,13 @@ return function ()
             env.root.bind.Label.Text = code.Name
         end)
 
+        -- :pre_triggered(function(env)
+            
+        -- end)
+        -- :post_triggered(function(env, success, fail_reason)
+            
+        -- end)
+
         :set_cooldown(function(env, on_cooldown)
             env.root.bind.BackgroundColor3 = on_cooldown and Color3.fromRGB(45, 45, 45) or Color3.fromRGB(75, 75, 75)
             if not on_cooldown then
