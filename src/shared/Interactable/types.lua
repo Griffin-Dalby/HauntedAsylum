@@ -80,6 +80,7 @@ export type BuilderEnv = {
 
     object_name: string,
     action: string,
+    targeted: boolean,
     binding: {code: Enum.KeyCode, type: Enum.UserInputType},
 
     on_cooldown: boolean,
@@ -90,9 +91,12 @@ export type _self_prompt_ui = {
     env: BuilderEnv,
     root_ui: Frame,
 
+    zindex: number,
+
     update: {
         object: (object_name: string) -> nil,
         action: (action: string) -> nil,
+        targeted: (targeted: boolean) -> nil,
         binding: (code: Enum.KeyCode, type: Enum.UserInputType) -> nil,
 
         cooldown_change: ((on_cooldown: boolean) -> nil)?,
@@ -108,6 +112,7 @@ function prompt_ui:unrender() end
 
 function prompt_ui:set_object(object_name: string) end
 function prompt_ui:set_action(action: string) end
+function prompt_ui:set_targeted(targeted: boolean) end
 function prompt_ui:set_binding(key: Enum.KeyCode, type: Enum.UserInputType) end
 
 function prompt_ui:set_cooldown(on_cooldown: boolean) end
@@ -120,6 +125,7 @@ export type _self_prompt_ui_builder = {
 
     _set_object: (object_name: string) -> nil,
     _set_action: (action: string) -> nil,
+    _set_targeted: (targeted: boolean) -> nil,
     _set_binding: (code: Enum.KeyCode, type: Enum.UserInputType) -> nil,
     
     _no_cooldown: boolean?,
@@ -132,6 +138,7 @@ function prompt_builder.new() : PromptUiBuilder end
 
 function prompt_builder:set_object(handler:  (env: BuilderEnv, object_name: string) -> nil): PromptUiBuilder end
 function prompt_builder:set_action(handler:  (env: BuilderEnv, action: string)      -> nil): PromptUiBuilder end
+function prompt_builder:set_targeted(handler: (env: BuilderEnv, targeted: boolean)  -> nil): PromptUiBuilder end
 function prompt_builder:set_binding(handler: (env: BuilderEnv, code: Enum.KeyCode, type: Enum.UserInputType) -> nil): PromptUiBuilder end
 
 function prompt_builder:no_cooldown(): PromptUiBuilder end
@@ -163,6 +170,7 @@ export type _self_prompt = {
     triggered: signal.SawdustSignal, --] Fired whenever this prompt is triggered.
 
     action_update: signal.SawdustSignal,   --] Fired whenever "action" is updated.
+    targeted_update: signal.SawdustSignal, --] Fired whenever "targeted" is updated.
     p_defs_update: signal.SawdustSignal,   --] Fired whenever "prompt_defs" is updated.
     cooldown_update: signal.SawdustSignal, --] Fired whenever "cooldown" is updated.
     
@@ -172,6 +180,7 @@ export type InteractablePrompt = typeof(setmetatable({} :: _self_prompt, prompt)
 function prompt.new(opts: _prompt_options): InteractablePrompt end
 
 function prompt:setAction(new_action: string) end
+function prompt:setTargeted(targeted: boolean) end
 function prompt:setPromptDefs(new_defs: _prompt_defs) end
 function prompt:setCooldown(seconds: number) end
 

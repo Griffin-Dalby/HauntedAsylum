@@ -21,14 +21,34 @@ return function ()
         :set_action(function(env, action)
             env.root.action_string.Text = action
         end)
+        :set_targeted(function(env, targeted)
+            print(targeted)
+            env.root.object_name.TextColor3 = targeted
+                and Color3.fromRGB(255, 255, 255)
+                or Color3.fromRGB(100, 100, 100)
+            env.root.object_name.TextTransparency = targeted
+                and 0 or .5
+
+            env.root.action_string.TextColor3 = targeted
+                and Color3.fromRGB(255, 255, 255)
+                or Color3.fromRGB(100, 100, 100)
+            env.root.object_name.TextTransparency = targeted
+                and 0 or .5
+
+            env.root.bind.ImageTransparency = targeted
+                and .25 or .75
+            env.root.bind.Label.TextTransparency = targeted
+                and 0 or .75
+
+        end)
         :set_binding(function(env, code, type)
-            env.root.bind.Text = code.Name
+            env.root.bind.Label.Text = code.Name
         end)
 
         :set_cooldown(function(env, on_cooldown)
             env.root.bind.BackgroundColor3 = on_cooldown and Color3.fromRGB(45, 45, 45) or Color3.fromRGB(75, 75, 75)
             if not on_cooldown then
-                env.root.bind.Text = env.binding.code.Name
+                env.root.bind.Label.Text = env.binding.code.Name
             end
         end)
         :update_cooldown(function(env, time_remaining)

@@ -82,6 +82,7 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
     self.triggered = emitter:newSignal()
 
     self.action_update = emitter:newSignal()
+    self.targeted_update = emitter:newSignal()
     self.p_defs_update = emitter:newSignal()
     self.cooldown_update = emitter:newSignal()
     self.disabled_clients_update = emitter:newSignal()
@@ -121,7 +122,16 @@ function prompt:setAction(new_action: string)
 
     self.action = new_action
     self.action_update:fire(new_action)
-    self.ui:set_action(new_action)
+    self.prompt_ui:set_action(new_action)
+end
+
+function prompt:setTargeted(targeted: boolean)
+    assert(targeted~=nil, `attempt to :setTargeted() to nil!`)
+    assert(type(targeted) == 'boolean', `attempt to :setTargeted() to an invalid type "{type(targeted)}"! (expected a boolean.)`)
+
+    self.targeted = targeted
+    self.targeted_update:fire(targeted)
+    self.prompt_ui:set_targeted(targeted)
 end
 
 function prompt:setPromptDefs(new_defs: types._prompt_defs)

@@ -49,6 +49,9 @@ function builder:set_object(handler: (env: types.BuilderEnv, object_name: string
 function builder:set_action(handler: (env: types.BuilderEnv, action: string) -> nil) : types.PromptUiBuilder
     self._set_action = wrap_f('action', handler)
     return self end
+function builder:set_targeted(handler: (env: types.BuilderEnv, targeted: boolean) -> nil) : types.PromptUiBuilder
+    self._set_targeted = wrap_f('targeted', handler)
+    return self end
 function builder:set_binding(handler: (env: types.BuilderEnv, code: Enum.KeyCode, type: Enum.UserInputType) -> nil) : types.PromptUiBuilder
     self._set_binding = wrap_f('binding', handler)
     return self end

@@ -33,6 +33,12 @@ local networking = sawdust.core.networking
 --]] Constants
 --]] Variables
 --]] Functions
+local function count_dir(d: {})
+    local i=0
+    for _ in d do i+=1 end
+    return i
+end
+
 --]] Script
 
 local secure = __secure.new()
@@ -75,7 +81,7 @@ runService.Heartbeat:Connect(function(deltaTime)
                 enabled_prompts[upd_str] = prompt
             end
 
-            updates[upd_str] = true
+            updates[upd_str] = prompt
         end
     end
 
@@ -85,5 +91,27 @@ runService.Heartbeat:Connect(function(deltaTime)
             prompt:disable()
             enabled_prompts[upd_str] = nil
         end
+    end
+
+    --> Check update z-index
+    local selected_prompt = {0, nil, ''}
+    local update_count = count_dir(updates)
+
+    if update_count==0 then
+        return end
+
+    for upd_str, prompt in pairs(updates) do --> Locate closest index
+        if not prompt.prompt_ui.zindex then continue end
+
+        local zindex = prompt.prompt_ui.zindex
+        if (zindex < selected_prompt[1]) and (update_count>1) then continue end
+        selected_prompt = {zindex, prompt, upd_str} end
+    
+    if not selected_prompt[2] then return end
+    selected_prompt[2]:setTargeted(true)
+
+    updates[selected_prompt[3]] = nil --> Remove from "updates", we'll disable these.
+    for _, prompt in pairs(updates) do
+        prompt:setTargeted(false)
     end
 end)
