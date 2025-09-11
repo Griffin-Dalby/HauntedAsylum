@@ -1,11 +1,12 @@
 --[[
 
-    Example Object & Prompt Decleration
+    Example Object & Prompt Decleration (SERVER)
 
     Griffin Dalby
     2025.09.10
 
-    This module will provide data for generating objects & prompts.
+    This module will provide example data for object & prompt
+    registration on the server side.
 
 --]]
 
@@ -21,6 +22,7 @@ return function ()
     }
 
     local test_prompt = test_object:newPrompt{
+        prompt_id = 'interact',
         action = 'Interact',
 
     }
