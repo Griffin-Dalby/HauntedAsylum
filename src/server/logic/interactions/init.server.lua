@@ -1,6 +1,6 @@
 --[[
 
-    Interactions Logic
+    Server Interactions Logic
 
     Griffin Dalby
     2025.09.09
@@ -14,7 +14,8 @@
 local replicatedStorage = game:GetService('ReplicatedStorage')
 
 --]] Modules
-local __secure = require(script.secure)
+local interactable = replicatedStorage.Shared.Interactable
+local __secure = require(interactable.secure)
 
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
@@ -32,7 +33,7 @@ local world_channel = networking.getChannel('world')
 
 local secure = __secure.new()
 
---]] Generate Objects
+--> Setup Objects
 for _, object_data: ModuleScript in pairs(script.objects:GetChildren()) do
     if not object_data:IsA('ModuleScript') then continue end
     local generator = require(object_data)
