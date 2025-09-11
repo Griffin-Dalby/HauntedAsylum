@@ -65,6 +65,7 @@ end
 --> Prompt Enabler Runtime
 local player_flagger = secure.player_flaggers[players.LocalPlayer]
 local enabled_prompts = {}
+local selected_prompt = {0, nil, ''}
 
 runService.Heartbeat:Connect(function(deltaTime)
     local updates = {}
@@ -97,7 +98,6 @@ runService.Heartbeat:Connect(function(deltaTime)
     end
 
     --> Check update z-index
-    local selected_prompt = {0, nil, ''}
     local update_count = count_dir(updates)
 
     if update_count==0 then
@@ -112,6 +112,7 @@ runService.Heartbeat:Connect(function(deltaTime)
     
     if not selected_prompt[2] then return end
     selected_prompt[2]:setTargeted(true)
+    selected_prompt[1] = 0
 
     updates[selected_prompt[3]] = nil --> Remove from "updates", we'll disable these.
     for _, prompt in pairs(updates) do

@@ -202,7 +202,7 @@ function prompt:destroy() end
 local platform = {}
 platform.__index = platform
 
-type self_platform = {
+export type _self_platform = {
     platform: 'desktop'|'console'|'mobile',
     brand: 'generic'|'xbox'|'ps'|'switch'
 }

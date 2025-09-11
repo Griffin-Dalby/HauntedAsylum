@@ -11,10 +11,12 @@
 --]]
 
 --]] Services
+local replicatedStorage = game:GetService('ReplicatedStorage')
 local userInputService = game:GetService('UserInputService')
 
 --]] Modules
-local types = require(script.Parent.types)
+local interactable = replicatedStorage.Shared.Interactable
+local types = require(interactable.types)
 
 --]] Sawdust
 --]] Settings
@@ -43,8 +45,25 @@ local gamepad_inputs = {
     Enum.KeyCode.Thumbstick2
 }
 
-local binding_data = {} --> TODO: Fill
---> Make sure to rename the platforms to whats used in this, like ps for playstation.
+local return_values = {
+    ['xbox'] = { --> Xbox
+        'ButtonA', 'ButtonB', 'ButtonX', 'ButtonY',
+        'ButtonLB', 'ButtonLT', 'ButtonLS',
+        'ButtonRB', 'ButtonRT', 'ButtonRS',
+        'ButtonStart'
+    },
+    
+    ['ps'] = { --> Playstation
+        'ButtonCross', 'ButtonCircle', 'ButtonSquare', 'ButtonTriangle',
+        'ButtonL1', 'ButtonL2', 'ButtonL3',
+        'ButtonR1', 'ButtonR2', 'ButtonR3',
+        'ButtonOptions'
+    },
+    
+    ['mobile'] = { --> Mobile
+        'Touch'
+    }
+}
 
 --]] Constants
 --]] Variables
@@ -86,7 +105,7 @@ function platform.new() : types.PlatformMap
             end
 
             local stringKcPressed = userInputService:GetStringForKeyCode(key.KeyCode)
-            for platform: string, values in pairs(binding_data.return_values) do
+            for platform: string, values in pairs(return_values) do
                 if table.find(values, stringKcPressed) then
                     brand_from_newest = platform
                 end
