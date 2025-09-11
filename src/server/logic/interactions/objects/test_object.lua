@@ -26,7 +26,9 @@ return function ()
         action = 'Interact',
 
     }
-
+    test_prompt.triggered:connect(function()
+        print('server triggered')
+    end)
 
     return test_object
 end

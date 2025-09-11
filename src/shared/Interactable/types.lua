@@ -106,7 +106,10 @@ export type _self_prompt_ui = {
         binding: (code: Enum.KeyCode, type: Enum.UserInputType) -> nil,
 
         cooldown_change: ((on_cooldown: boolean) -> nil)?,
-        cooldown_tick: ((time_remaining: number) -> nil)?
+        cooldown_tick: ((time_remaining: number) -> nil)?,
+
+        pre_trigger: () -> nil,
+        triggered: (success: boolean, fail_reason: string) -> nil
     }
 }
 export type PromptUi = typeof(setmetatable({} :: _self_prompt_ui, prompt_ui))
@@ -129,14 +132,17 @@ export type _self_prompt_ui_builder = {
 
     _on_compile: (() -> nil)?,
 
-    _set_object: (object_name: string) -> nil,
-    _set_action: (action: string) -> nil,
-    _set_targeted: (targeted: boolean) -> nil,
-    _set_binding: (code: Enum.KeyCode, type: Enum.UserInputType) -> nil,
+    _set_object: (env: BuilderEnv, object_name: string) -> nil,
+    _set_action: (env: BuilderEnv, action: string) -> nil,
+    _set_targeted: (env: BuilderEnv, targeted: boolean) -> nil,
+    _set_binding: (env: BuilderEnv, code: Enum.KeyCode, type: Enum.UserInputType) -> nil,
     
+    _pre_trigger: (env: BuilderEnv) -> nil,
+    _triggered: (env: BuilderEnv, success: boolean, fail_reason: string) -> nil,
+
     _no_cooldown: boolean?,
-    _set_cooldown: ((on_cooldown: boolean) -> nil)?,
-    _update_cooldown: ((time_remaining: number) -> nil?),
+    _set_cooldown: ((env: BuilderEnv, on_cooldown: boolean) -> nil)?,
+    _update_cooldown: ((env: BuilderEnv, time_remaining: number) -> nil?),
 }
 export type PromptUiBuilder = typeof(setmetatable({} :: _self_prompt_ui_builder, prompt_builder))
 
@@ -146,6 +152,9 @@ function prompt_builder:set_object(handler:  (env: BuilderEnv, object_name: stri
 function prompt_builder:set_action(handler:  (env: BuilderEnv, action: string)      -> nil): PromptUiBuilder end
 function prompt_builder:set_targeted(handler: (env: BuilderEnv, targeted: boolean)  -> nil): PromptUiBuilder end
 function prompt_builder:set_binding(handler: (env: BuilderEnv, code: Enum.KeyCode, type: Enum.UserInputType) -> nil): PromptUiBuilder end
+
+function prompt_builder:pre_trigger(handler: (env: BuilderEnv) -> nil): PromptUiBuilder end
+function prompt_builder:triggered(handler: (env: BuilderEnv, success: boolean, fail_reason: string) -> nil): PromptUiBuilder end
 
 function prompt_builder:no_cooldown(): PromptUiBuilder end
 function prompt_builder:set_cooldown(handler:    (env: BuilderEnv, on_cooldown: boolean) -> nil) : PromptUiBuilder end
@@ -173,8 +182,8 @@ export type _self_prompt = {
     enabled: boolean,
 
     --] Signals
-    pre_trigger: signal.SawdustSignal,  --] Fired whenever this prompt is triggered, before authorization.
-    post_trigger: signal.SawdustSignal, --] Fired whenever this prompt is triggered, after authorization.
+    pre_trigger: signal.SawdustSignal, --] Fired whenever this prompt is triggered, before authorization.
+    triggered: signal.SawdustSignal,   --] Fired whenever this prompt is triggered, after authorization.
 
     action_update: signal.SawdustSignal,   --] Fired whenever "action" is updated.
     targeted_update: signal.SawdustSignal, --] Fired whenever "targeted" is updated.

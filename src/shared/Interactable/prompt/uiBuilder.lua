@@ -56,6 +56,13 @@ function builder:set_binding(handler: (env: types.BuilderEnv, code: Enum.KeyCode
     self._set_binding = wrap_f('binding', handler)
     return self end
 
+function builder:pre_trigger(handler: (env: types.BuilderEnv) -> nil) : types.PromptUiBuilder
+    self._pre_trigger = wrap_f('pre_trigger', handler)
+    return self end
+function builder:triggered(handler: (env: types.BuilderEnv, success: boolean, fail_reason: string) -> nil) : types.PromptUiBuilder
+    self._triggered = wrap_f('triggered', handler)
+    return self end
+
 function builder:no_cooldown() : types.PromptUiBuilder
     self._no_cooldown = true
     return self end

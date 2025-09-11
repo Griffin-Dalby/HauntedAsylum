@@ -32,6 +32,9 @@ return function ()
         prompt_id = 'interact',
         action = 'Interact',
     }
+    test_prompt.triggered:connect(function()
+        print('client trigger')
+    end)
 
 
     return test_object

@@ -63,6 +63,9 @@ function promptUi.new(builder_data: types.PromptUiBuilder) : types.PromptUi
             wrap_f(builder_data._set_cooldown) else nil,
         cooldown_tick = if not builder_data._no_cooldown then
             wrap_f(builder_data._update_cooldown) else nil,
+
+        pre_trigger = wrap_f(builder_data._pre_trigger),
+        triggered = wrap_f(builder_data._triggered)
     }
 
     return self
