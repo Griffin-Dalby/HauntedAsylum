@@ -22,7 +22,6 @@ return function ()
             env.root.action_string.Text = action
         end)
         :set_targeted(function(env, targeted)
-            print(targeted)
             env.root.object_name.TextColor3 = targeted
                 and Color3.fromRGB(255, 255, 255)
                 or Color3.fromRGB(100, 100, 100)
