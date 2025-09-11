@@ -18,7 +18,11 @@ local types = {}
 --#region
 export type _prompt_defs = {
     interact_gui: PromptUiBuilder?,                        --] What Builder to display for interactions
-    interact_bind: { Enum.KeyCode | Enum.UserInputType }?, --] List of binds acceptable
+    interact_bind: { 
+        desktop: Enum?,
+        console: Enum?,
+        mobile: Enum?
+    }?, --] List of binds acceptable
 
     range: number,       --] Minimum distance you must be to activate
     raycast: boolean,    --] If true, the object instance must be in sight to interact.
@@ -70,6 +74,7 @@ function object:newPrompt(opts: _prompt_options) : InteractablePrompt end
 
 --[[ PROMPT UI & BUILDER ]]--
 --#region
+
 local prompt_ui = {}
 prompt_ui.__index = prompt_ui
 
@@ -189,6 +194,21 @@ function prompt:disableForPlayers(...: Player) end
 function prompt:enableForPlayer(...: Player) end
 
 function prompt:destroy() end
+
+--#endregion
+
+--[[ PLATFORM ]]--
+--#region
+local platform = {}
+platform.__index = platform
+
+type self_platform = {
+    platform: 'desktop'|'console'|'mobile',
+    brand: 'generic'|'xbox'|'ps'|'switch'
+}
+export type PlatformMap = typeof(setmetatable({} :: _self_platform, platform))
+
+function platform.new() : PlatformMap end
 
 --#endregion
 

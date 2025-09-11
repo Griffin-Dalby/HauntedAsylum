@@ -21,7 +21,8 @@ return function ()
 
         prompt_defs = {
             interact_gui = 'basic', --> See interactions.promptUis.basic
-            authorized = true
+            interact_bind = { desktop: Enum.KeyCode.E, console: Enum.KeyCode.ButtonX }
+            authorized = true,
         },
 
         instance = workspace:WaitForChild('Part'),
