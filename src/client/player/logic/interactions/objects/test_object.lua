@@ -25,7 +25,7 @@ return function ()
             authorized = true,
         },
 
-        instance = workspace:WaitForChild('Part'),
+        instance = {workspace, {Name = 'TestPart'}},
     }
 
     local test_prompt = test_object:newPrompt{

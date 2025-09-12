@@ -16,7 +16,7 @@
 local _default_prompt_defs = {
     interact_bind = { desktop = Enum.KeyCode.E, console = Enum.KeyCode.ButtonX },
 
-    range = 7.5,
+    range = 12.5,
     raycast = true,
     authorized = true,
 
@@ -65,6 +65,45 @@ helper.verify.player_table = function(players: {}) : {[number]: Player}
     end
 
     return clean
+end
+
+helper.verify.instance = function(provided) : Instance
+    if type(provided) == 'table' then
+        local container = provided[1]     :: Instance
+        local search_params = provided[2] :: {[string]: any}
+
+        assert(container, `Attempt to search for instance inside nil container!`)
+        assert(typeof(container)=='Instance',
+            `"container" (arg 1) is of type "{typeof(container)}", expected an instance.`)
+
+        assert(search_params, `Attempt to search for instance with nil search_params!`)
+        assert(type(search_params)=='table',
+            `"search_params" (arg 2) is of type "{type(search_params)}", expected a table.`)
+
+        --]] Returns true if the search_params fit the provided instance.
+        local function consider_params(instance)
+            local fail = false
+            for param_name, param_value in pairs(search_params) do
+                if instance[param_name] ~= param_value then
+                    fail = true
+                    break end
+            end
+
+            return not fail
+        end
+
+        local instances = {}
+        for _, child in pairs(container:GetChildren()) do
+            if not consider_params(child) then continue end
+            table.insert(instances, child)
+        end
+
+        return instances
+    elseif typeof(provided) == 'Instance' then
+        return {provided}
+    else
+        error(`An invalid instance was passed! (Provided Type: {type(provided)}/{typeof(provided)}`)
+    end
 end
 
 return helper

@@ -79,7 +79,6 @@ end
     will be used.]]
 function flagger:newChild(name: string, template: {}) : Flagger
     assert(name, `Attempt to create a new child without passing a name!`)
-    assert(type(name) == 'string', `Attempt to create a new child with a non-string name! (Provided type: {type(name)}`)
     assert(self.children[name]==nil, `There's already a child with the name "{name}" under this flagger!`)
     
     local sub_flagger = flagger.new(template or self._template)
@@ -91,7 +90,6 @@ end
     Attempts to locate a child with a specific name under this flagger. ]]
 function flagger:findChild(name: string) : Flagger
     assert(name, `Attempt to find a child without passing a name!`)
-    assert(type(name) == 'string', `Attempt to find a child with a non-string name! (Provided type: {type(name)}`)
     assert(self.children[name]~=nil, `Failed to find child with the name "{name}" under this flagger.`)
 
     return self.children[name]
@@ -102,7 +100,6 @@ end
     under this flagger. ]]
 function flagger:hasChild(name: string) : boolean
     assert(name, `Attempt to check for existence of child without passing a name!`)
-    assert(type(name) == 'string', `Attempt to find a child with a non-string name! (Provided type: {type(name)}`)
 
     return self.children[name] ~= nil
 end

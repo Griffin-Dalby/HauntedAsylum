@@ -13,6 +13,7 @@
 local replicatedStorage = game:GetService('ReplicatedStorage')
 
 --]] Modules
+local util = require(script.Parent.util)
 local types = require(script.Parent.types)
 local prompt = require(script.Parent.prompt)
 local promptBuilder = require(script.Parent.prompt.uiBuilder)
@@ -45,18 +46,18 @@ function object.new(opts: types._object_options): types.InteractableObject
         `"object_name" in Object Options is of type "{type(opts.object_name)}"! It was expected to be a string.`)
 
     assert(opts.instance, `Missing "instance" from Object Options! This is the instance this prompts will be attached to.`)
-    assert(typeof(opts.instance) == 'Instance',
-        `"instance" in Object Options is of type "{typeof(opts.instance)}! It was expected to be a Isntance.`)
+    assert((typeof(opts.instance) == 'Instance') or (type(opts.instance) == 'table'),
+        `"instance" in Object Options is of type "{typeof(opts.instance)}! It was expected to be a Instance, or a descriptive table!`)
 
     local self = setmetatable({} :: types._self_object, object)
 
     self.object_id = opts.object_id
     self.object_name = opts.object_name
 
-    self.instance = opts.instance
+    self.instances = util.verify.instance(opts.instance)
 
     self.prompt_defs = opts.prompt_defs or {}
-    self.prompt_defs.instance = self.instance --> Pass these into inherited prompt_defs
+    self.prompt_defs.instance_table = self.instances --> Pass these into inherited prompt_defs
     self.prompt_defs.object_name = self.object_name
     self.prompt_defs.object_id = self.object_id
 
@@ -103,7 +104,7 @@ function object:newPrompt(opts: types._prompt_options): types.InteractablePrompt
     
     assert(self.prompts[opts.prompt_id]==nil, `{self.object_id} already has a prompt w/ id "{opts.prompt_id}"! Remember, these are to be unique!`)
 
-    local new_prompt = prompt.new(opts, self.prompt_defs, {self.object_id, self.object_name})
+    local new_prompt = prompt.new(opts, self.prompt_defs)
     self.prompts[opts.prompt_id] = new_prompt
     
     return new_prompt

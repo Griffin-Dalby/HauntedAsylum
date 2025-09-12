@@ -72,14 +72,15 @@ function promptUi.new(builder_data: types.PromptUiBuilder) : types.PromptUi
 end
 
 function promptUi:render(target: BasePart, information: {})
-    assert(self.__runtime==nil, `PromptUI visualization runtime already in use!`)
+    self.target = target:IsA('Model') and target.PrimaryPart or target
+    if self.__runtime then return end
 
-    self.__runtime = runService.Heartbeat:Connect(function()
+    self.__runtime = runService.Heartbeat:Connect(function(dT)
         --> Render UI
         self.root_ui.Parent = prompt_container
         
         local screen_center = Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)
-        local vector, onScreen = camera:WorldToViewportPoint(target.Position)
+        local vector, onScreen = camera:WorldToViewportPoint(self.target.Position)
         local targetPos = Vector2.new(vector.X, vector.Z)
         local distance = (targetPos-screen_center).Magnitude
 
@@ -112,6 +113,7 @@ function promptUi:unrender()
     self.root_ui.Visible = false
 
     self.zindex = nil
+    self.target = nil
 end
 
 function promptUi:set_object(object_name: string)

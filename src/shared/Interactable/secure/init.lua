@@ -38,10 +38,14 @@ local flagger_player_data = {
 }
 
 local flagger_object_data = {
-    
+
 }
 
 local flagger_prompt_data = {
+    
+}
+
+local flagger_instance_data = {
     out_of_range = true,
 }
 
@@ -136,21 +140,30 @@ function secure.new() : InteractionSecurer
                 player_flagger:newChild(object.object_id, flagger_object_data)
             end
             local object_flagger = player_flagger:findChild(object.object_id)
-
+            
             --> Range
-            local object_root = object.instance:IsA('Model') and object.instance.PrimaryPart or object.instance
-            local dist = (root_pos-object_root.Position).Magnitude
-
             for _, prompt in pairs(object.prompts) do
                 if not object_flagger:hasChild(prompt.prompt_id) then
                     object_flagger:newChild(prompt.prompt_id, flagger_prompt_data)
                 end
                 local prompt_flagger = object_flagger:findChild(prompt.prompt_id)
+                
+                for _, instance in pairs(prompt.attached_instances) do
+                    if not prompt_flagger:hasChild(instance) then
+                        prompt_flagger:newChild(instance, flagger_instance_data)
+                    end
+                    local instance_flagger = prompt_flagger:findChild(instance)
+                    
+                    local object_root = instance:IsA('Model') and instance.PrimaryPart or instance
+                    local dist = (root_pos-object_root.Position).Magnitude
+                    
+                    local in_range = dist<prompt.prompt_defs.range --> Character in-range check
+                    instance_flagger:setFlag('out_of_range', not in_range)
+                    if __debug then print(`out_of_range: {not in_range}`) end
+                    if not in_range then continue end
+                end
 
-                local in_range = dist<prompt.prompt_defs.range --> Character in-range check
-                prompt_flagger:setFlag('out_of_range', not in_range)
-                if __debug then print(`out_of_range: {not in_range}`) end
-                if not in_range then continue end
+
             end
         end
     end

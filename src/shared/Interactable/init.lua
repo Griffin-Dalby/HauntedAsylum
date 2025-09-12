@@ -62,8 +62,8 @@ function interactable.newObject(opts: types._object_options) : types.Interactabl
         `"object_name" option is of type "{type(opts.object_name)}", it was expected to be a string!`)
 
     assert(opts.instance, `Missing "instance" option!`)
-    assert(typeof(opts.instance) == 'Instance', 
-        `"instance" option is of type "{typeof(opts.instance)}", it was expected to be an instance!`)
+    assert((typeof(opts.instance) == 'Instance') or (type(opts.instance) == 'table'), 
+        `"instance" option is of type "{typeof(opts.instance)}", it was expected to be an instance, or a descriptive table!`)
 
     if opts.prompt_defs then
         util.verify.prompt_defs(opts.prompt_defs) --] Verifies & cleans prompt_defs

@@ -17,18 +17,19 @@ local types = {}
 --[[ OPTIONS ]]--
 --#region
 export type _prompt_defs = {
-    interact_gui: PromptUiBuilder?,                        --] What Builder to display for interactions
+    interact_gui: PromptUiBuilder?, --] What Builder to display for interactions
     interact_bind: { 
         desktop: Enum?,
         console: Enum?,
         mobile: Enum?
     }?, --] List of binds acceptable
 
-    range: number,       --] Minimum distance you must be to activate
-    raycast: boolean,    --] If true, the object instance must be in sight to interact.
-    authorized: boolean, --] If true, the client will contact the server to verify/parse interaction.
+    instance: {Instance}?, --] Custom instance target for specific prompt
+    range: number,         --] Minimum distance you must be to activate
+    raycast: boolean,      --] If true, the object instance must be in sight to interact.
+    authorized: boolean,   --] If true, the client will contact the server to verify/parse interaction.
 
-    hold_time: number?,  --] How long the bind must be held to activate, or 0 for tap.
+    hold_time: number?,    --] How long the bind must be held to activate, or 0 for tap.
 }
 
 export type _object_options = {
@@ -36,7 +37,7 @@ export type _object_options = {
     object_name: string,
 
     authorized: boolean,
-    instance: Instance,
+    instance: {Instance}?,
     prompt_defs: _prompt_defs?,
 }
 
@@ -59,7 +60,7 @@ export type _self_object = {
     object_id: string,
     object_name: string,
 
-    instance: Instance,
+    instances: {Instance},
     prompt_defs: _prompt_defs?,
 
     prompts: {[string]: InteractablePrompt}
@@ -175,6 +176,8 @@ export type _self_prompt = {
     prompt_defs: _prompt_defs,
     prompt_ui: PromptUi?,
 
+    attached_instances: { Instance }, --] List of instances this prompt appears for
+
     cooldown: number,    --] Length of cooldown between each trigger
     authorized: boolean, --] If the server needs to verify/parse action
 
@@ -198,7 +201,7 @@ function prompt.new(opts: _prompt_options): InteractablePrompt end
 
 function prompt:trigger(triggered_player: Player) end
 
-function prompt:enable() end
+function prompt:enable(instance: Instance) end
 function prompt:disable() end
 
 function prompt:setAction(new_action: string) end

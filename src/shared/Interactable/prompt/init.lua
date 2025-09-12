@@ -42,7 +42,8 @@ local is_client = runService:IsClient()
 local prompt = {}
 prompt.__index = prompt
 
-function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_defs & { instance: Instance }): types.InteractablePrompt
+type _a_inherited_defs = { instance_table: {Instance}, object_name: string, object_id: string }
+function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_defs & _a_inherited_defs): types.InteractablePrompt
     local self = setmetatable({} :: types._self_prompt, prompt)
 
     self.prompt_id = opts.prompt_id
@@ -55,6 +56,20 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
         for i, v in pairs(inherited_defs) do
             if not self.prompt_defs[i] then
                 self.prompt_defs[i] = v end
+        end
+
+        --> Lookup Instance
+        self.attached_instances = {}
+        local inst_table = inherited_defs.instance_table
+        for _, inst in pairs(inst_table) do
+            local is_prompt_inst = inst:GetAttribute('prompt_id') == self.prompt_id
+            if is_prompt_inst then
+                table.insert(self.attached_instances, inst)
+                break end
+        end
+
+        if not self.attached_instances then
+            error(`Failed to locate correlating prompt_inst w/ prompt_id!`)
         end
     end
 
@@ -190,14 +205,14 @@ function prompt:trigger(triggered_player: Player?)
 end
 
 --[[ VISIBILITY ]]--
-function prompt:enable()
+function prompt:enable(instance: Instance)
     self.enabled = true
     if is_client then
-        self.prompt_ui:render(self.prompt_defs.instance)
+        self.prompt_ui:render(instance)
     end
 end
 
-function prompt:disable()
+function prompt:disable(instance: Instance)
     self.enabled = false
     if is_client then
         self.prompt_ui:unrender()

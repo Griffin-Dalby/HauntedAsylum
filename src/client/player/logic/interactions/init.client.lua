@@ -74,27 +74,30 @@ runService.Heartbeat:Connect(function(deltaTime)
     --> Check for enables
     for object_id, object_flagger in pairs(player_flagger.children) do
         for prompt_id, prompt_flagger in pairs(object_flagger.children) do
-            local prompt_visible = prompt_flagger:isClean()
-            if not prompt_visible then break end
-            
-            local object = interactable.findObject(object_id)
-            local prompt = object.prompts[prompt_id]
-            local upd_str = `{object_id}*{prompt_id}`
+            for instance: Instance, instance_flagger in pairs(prompt_flagger.children) do
+                local prompt_visible = instance_flagger:isClean()
+                if not prompt_visible then continue end
+                
+                local object = interactable.findObject(object_id)
+                local prompt = object.prompts[prompt_id]
 
-            if not enabled_prompts[upd_str] then
-                prompt:enable()
-                enabled_prompts[upd_str] = prompt
+                if not enabled_prompts[instance] then
+                    print(`enable inst`)
+                    prompt:enable(instance)
+                    enabled_prompts[instance] = prompt
+                end
+
+                updates[instance] = prompt
             end
-
-            updates[upd_str] = prompt
         end
     end
 
     --> Check for disables
-    for upd_str: string, prompt in pairs(enabled_prompts) do
-        if not updates[upd_str] then
+    for instance: Instance, prompt in pairs(enabled_prompts) do
+        if not updates[instance] then
+            print('disable inst')
             prompt:disable()
-            enabled_prompts[upd_str] = nil
+            enabled_prompts[instance] = nil
         end
     end
 
@@ -104,12 +107,12 @@ runService.Heartbeat:Connect(function(deltaTime)
     if update_count==0 then
         return end
 
-    for upd_str, prompt in pairs(updates) do --> Locate closest index
+    for instance, prompt in pairs(updates) do --> Locate closest index
         if not prompt.prompt_ui.zindex then continue end
 
         local zindex = prompt.prompt_ui.zindex
         if (zindex < selected_prompt[1]) and (update_count>1) then continue end
-        selected_prompt = {zindex, prompt, upd_str} end
+        selected_prompt = {zindex, prompt, instance} end
     
     if not selected_prompt[2] then return end
     selected_prompt[2]:setTargeted(true)
