@@ -65,7 +65,7 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
             local is_prompt_inst = inst:GetAttribute('prompt_id') == self.prompt_id
             if is_prompt_inst then
                 table.insert(self.attached_instances, inst)
-                break end
+            end
         end
 
         if not self.attached_instances then
@@ -215,7 +215,7 @@ end
 function prompt:disable(instance: Instance)
     self.enabled = false
     if is_client then
-        self.prompt_ui:unrender()
+        self.prompt_ui:unrender(instance)
     end
 end
 
