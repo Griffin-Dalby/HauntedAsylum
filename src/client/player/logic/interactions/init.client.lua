@@ -73,16 +73,16 @@ runService.Heartbeat:Connect(function(deltaTime)
 
     --> Check for enables
     for object_id, object_flagger in pairs(player_flagger.children) do
+        local object = interactable.findObject(object_id)
+        
         for prompt_id, prompt_flagger in pairs(object_flagger.children) do
+            local prompt = object.prompts[prompt_id]
+
             for instance: Instance, instance_flagger in pairs(prompt_flagger.children) do
                 local prompt_visible = instance_flagger:isClean()
                 if not prompt_visible then continue end
                 
-                local object = interactable.findObject(object_id)
-                local prompt = object.prompts[prompt_id]
-
                 if not enabled_prompts[instance] then
-                    print(`enable inst`)
                     prompt:enable(instance)
                     enabled_prompts[instance] = prompt
                 end
@@ -95,8 +95,7 @@ runService.Heartbeat:Connect(function(deltaTime)
     --> Check for disables
     for instance: Instance, prompt in pairs(enabled_prompts) do
         if not updates[instance] then
-            print('disable inst')
-            prompt:disable()
+            prompt:disable(instance)
             enabled_prompts[instance] = nil
         end
     end
