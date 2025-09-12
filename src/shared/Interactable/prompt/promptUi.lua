@@ -67,20 +67,43 @@ function promptUi.new(builder_data: types.PromptUiBuilder) : types.PromptUi
         pre_trigger = wrap_f(builder_data._pre_trigger),
         triggered = wrap_f(builder_data._triggered)
     }
+    self.targets = {}
 
     return self
 end
 
 function promptUi:render(target: BasePart, information: {})
-    self.target = target:IsA('Model') and target.PrimaryPart or target
+    local root_target = target:IsA('Model') and target.PrimaryPart or target
+    local target_i = table.find(self.targets, root_target)
+    if not target_i then
+        table.insert(self.targets, root_target) end
     if self.__runtime then return end
 
+    local l_target_upd = 1
+    local target
     self.__runtime = runService.Heartbeat:Connect(function(dT)
+        --> Distance
+        local camera_pos = workspace.CurrentCamera.CFrame.Position+(workspace.CurrentCamera.CFrame.LookVector*2)
+        if l_target_upd > .33 then
+            local max = {math.huge, nil}
+            for _, target in pairs(self.targets) do
+                local dist = (camera_pos-target.Position).Magnitude
+                if dist < max[1] then
+                    max = {dist, target}
+                end
+            end
+            if not max[1] then
+                warn(`All targets exhausted, unrendering promptUI!`)
+                self:unrender()
+                return end
+            target = max[2]
+        end
+
         --> Render UI
         self.root_ui.Parent = prompt_container
         
         local screen_center = Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)
-        local vector, onScreen = camera:WorldToViewportPoint(self.target.Position)
+        local vector, onScreen = camera:WorldToViewportPoint(target.Position)
         local targetPos = Vector2.new(vector.X, vector.Z)
         local distance = (targetPos-screen_center).Magnitude
 
@@ -103,17 +126,24 @@ function promptUi:render(target: BasePart, information: {})
         self.zindex = base_z_idx
     end)
 end
-function promptUi:unrender()
-    if self.__runtime then
-        self.__runtime:Disconnect()
-        self.__runtime = nil
+function promptUi:unrender(target: BasePart)
+    local root_target = target:IsA('Model') and target.PrimaryPart or target
+    local target_i = table.find(self.targets, root_target)
+    if target_i then
+        table.remove(self.targets, target_i) end
+    if #self.targets==0 then
+        if self.__runtime then
+            self.__runtime:Disconnect()
+            self.__runtime = nil
+        end
+
+        self.root_ui.Parent = script
+        self.root_ui.Visible = false
+
+        self.zindex = nil
+        self.target = nil
     end
-
-    self.root_ui.Parent = script
-    self.root_ui.Visible = false
-
-    self.zindex = nil
-    self.target = nil
+    
 end
 
 function promptUi:set_object(object_name: string)
