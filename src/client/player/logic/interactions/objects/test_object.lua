@@ -15,8 +15,8 @@ local interactable = require(replicatedStorage.Shared.Interactable)
 
 return function ()
     local test_object = interactable.newObject{
-        object_id = 'test_object',
-        object_name = 'Test Object',
+        object_id = 'test_object_1',
+        object_name = 'Test Object 1',
         authorized = true,
 
         prompt_defs = {
@@ -25,7 +25,7 @@ return function ()
             authorized = true,
         },
 
-        instance = {workspace, {Name = 'TestPart'}},
+        instance = {workspace, {Name = 'TestPart1'}},
     }
 
     local test_prompt = test_object:newPrompt{
