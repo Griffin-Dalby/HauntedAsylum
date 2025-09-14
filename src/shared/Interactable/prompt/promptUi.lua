@@ -83,7 +83,7 @@ function promptUi:render(target: BasePart, information: {})
     local target
     self.__runtime = runService.Heartbeat:Connect(function(dT)
         --> Distance
-        local camera_pos = workspace.CurrentCamera.CFrame.Position+(workspace.CurrentCamera.CFrame.LookVector*2)
+        local camera_pos = workspace.CurrentCamera.CFrame.Position+workspace.CurrentCamera.CFrame.LookVector
         if l_target_upd > .33 then
             local max = {math.huge, nil}
             for _, target in pairs(self.targets) do

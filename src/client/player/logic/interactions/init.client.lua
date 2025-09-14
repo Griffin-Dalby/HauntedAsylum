@@ -69,7 +69,7 @@ local enabled_prompts = {}
 local selected_prompt = {0, nil, ''}
 
 runService.Heartbeat:Connect(function(deltaTime)
-    local updates = {}
+    local instance_updates = {}
 
     --> Check for enables
     for object_id, object_flagger in pairs(player_flagger.children) do
@@ -87,26 +87,26 @@ runService.Heartbeat:Connect(function(deltaTime)
                     enabled_prompts[instance] = prompt
                 end
 
-                updates[instance] = prompt
+                instance_updates[instance] = prompt
             end
         end
     end
 
     --> Check for disables
     for instance: Instance, prompt in pairs(enabled_prompts) do
-        if not updates[instance] then
+        if not instance_updates[instance] then
             prompt:disable(instance)
             enabled_prompts[instance] = nil
         end
     end
 
     --> Check update z-index
-    local update_count = count_dir(updates)
+    local update_count = count_dir(instance_updates)
 
     if update_count==0 then
         return end
 
-    for instance, prompt in pairs(updates) do --> Locate closest index
+    for instance, prompt in pairs(instance_updates) do --> Locate closest index
         if not prompt.prompt_ui.zindex then continue end
 
         local zindex = prompt.prompt_ui.zindex
@@ -117,8 +117,9 @@ runService.Heartbeat:Connect(function(deltaTime)
     selected_prompt[2]:setTargeted(true)
     selected_prompt[1] = 0
 
-    updates[selected_prompt[3]] = nil --> Remove from "updates", we'll disable these.
-    for _, prompt in pairs(updates) do
+    instance_updates[selected_prompt[3]] = nil --> Remove from "updates", we'll disable these.
+    for _, prompt in pairs(instance_updates) do
+        if prompt==selected_prompt[2] then continue end
         prompt:setTargeted(false)
     end
 end)
