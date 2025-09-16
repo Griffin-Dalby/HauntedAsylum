@@ -86,7 +86,7 @@ runService.Heartbeat:Connect(function(deltaTime)
                     prompt:enable(instance)
                     enabled_prompts[instance] = prompt
                 end
-
+                
                 instance_updates[instance] = prompt
             end
         end
@@ -94,15 +94,13 @@ runService.Heartbeat:Connect(function(deltaTime)
 
     --> Check for disables
     for instance: Instance, prompt in pairs(enabled_prompts) do
-        if not instance_updates[instance] then
-            prompt:disable(instance)
-            enabled_prompts[instance] = nil
-        end
+        if instance_updates[instance] then continue end
+        prompt:disable(instance)
+        enabled_prompts[instance] = nil
     end
 
     --> Check update z-index
     local update_count = count_dir(instance_updates)
-
     if update_count==0 then
         return end
 
@@ -139,7 +137,7 @@ userInputService.InputBegan:Connect(function(key, gp)
     if (key.KeyCode~=platform_bind)
         and (key.UserInputType~=platform_bind) then
             return end
-            
+
     --> Trigger prompt
     prompt:trigger()
 end)
