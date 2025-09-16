@@ -31,7 +31,7 @@ local interactable_cache = cache.findCache('interactable')
 local prompt_ui_cache = interactable_cache:createTable('prompt.ui')
 
 --]] Settings
-local __debug = true
+local __debug = false
 
 --]] Constants
 local is_client = runService:IsClient()
@@ -138,6 +138,7 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
     if is_client then
         self.prompt_ui = self.interact_gui:compile()
 
+        self.prompt_ui:set_max_range(self.prompt_defs.range)
         self.prompt_ui:set_object(self.prompt_defs.object_name)
         self.prompt_ui:set_action(opts.action)
     end
@@ -145,22 +146,28 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
     return self
 end
 
-function prompt:trigger(triggered_player: Player?)
+function prompt:trigger(instance: Instance, triggered_player: Player?)
     local object_id, prompt_id = self.prompt_defs.object_id, self.prompt_id
 
-    self.pre_trigger:fire(self)
+    instance = instance or self.prompt_ui.target :: Instance
+    self.pre_trigger:fire(self, instance)
+
+    if not self.active_cooldowns[instance] and self.attached_instances then
+        self.active_cooldowns[instance] = {} end
+    local inst_cooldowns = self.active_cooldowns[instance]
 
     if is_client then
         local finished, success = false, false --> Cache networking
 
-        if self.active_cooldowns['local'] then return end
-        self.active_cooldowns['local'] = true
+        if inst_cooldowns['local'] then return end
+        inst_cooldowns['local'] = true
+
         self.prompt_ui.update.set_cooldown(true)
         task.delay(self.cooldown, function()
             if finished and not success then
                 return end
-            self.active_cooldowns['local'] = false
-        self.prompt_ui.update.set_cooldown(false)
+            inst_cooldowns['local'] = false
+            self.prompt_ui.update.set_cooldown(false)
         end)
 
         self.prompt_ui.update.pre_trigger()
@@ -168,7 +175,7 @@ function prompt:trigger(triggered_player: Player?)
             local fail_reason
             world_channel.interaction:with()
                 :intent('trigger')
-                :data(object_id, prompt_id)
+                :data(object_id, prompt_id, instance)
                 :timeout(3)
                 :invoke()
                     :andThen(function() success = true end)
@@ -179,26 +186,26 @@ function prompt:trigger(triggered_player: Player?)
                             fail_reason = err[1]
                             warn(`A message was provided: {err[1]}`) end
 
-                        self.active_cooldowns['local'] = false
+                        inst_cooldowns['local'] = false
                         self.prompt_ui.update.set_cooldown(false)
                     end)
 
             repeat task.wait(0) until finished
             self.prompt_ui.update.triggered(success, fail_reason)
-            self.triggered:fire(self)
+            self.triggered:fire(self, instance)
 
             
         end
     else
-        if self.active_cooldowns[triggered_player] then return false end
+        if inst_cooldowns[triggered_player] then return false end
         if self.cooldown > 0 then
-            self.active_cooldowns[triggered_player] = true
+            inst_cooldowns[triggered_player] = true
             task.delay(self.cooldown, function()
-                self.active_cooldowns[triggered_player] = false
+                inst_cooldowns[triggered_player] = false
             end)
         end
 
-        self.triggered:fire(self, triggered_player)
+        self.triggered:fire(self, instance, triggered_player)
 
         return true
     end

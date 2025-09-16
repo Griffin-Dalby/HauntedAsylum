@@ -27,7 +27,7 @@ local networking = sawdust.core.networking
 local world_channel = networking.getChannel('world')
 
 --]] Settings
-local __debug = true
+local __debug = false
 
 --]] Constants
 --]] Variables
