@@ -12,10 +12,10 @@
 
 --]] Services
 local replicatedStorage = game:GetService('ReplicatedStorage')
-local https = game:GetService('HttpService')
 
 --]] Module
 local types = require(script.types)
+local rig = require(script.rig)
 
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
@@ -42,7 +42,27 @@ function entity.new(identity: {id: string, name: string}) : types.Entity
     self.name = identity.name
     self.fsm = fsm.create()
 
+    self.idle = self.fsm:state('idle')
+    self.patrol = self.fsm:state('patrol')
+
+    self.fsm:switchState('idle')
+
     return self
+end
+
+function entity:rig(rig_data: types.RigData)
+    self.rig = rig.new(rig_data)
+end
+
+function entity:defineAnimation(state: string, animation_id: number)
+    assert(animation_id, `:defineAnimation() missing animation_id!`)
+    assert(type(animation_id) == 'number',
+        `:defineAnimation() animation_id is of type {type(animation_id)}! It was expected to be a number`)
+
+    local animation = Instance.new('Animation')
+    animation.AnimationId = `rbxassetid://{animation_id}`
+
+    self.rig.animator:defineAnimation(state, animation_id)
 end
 
 return entity
