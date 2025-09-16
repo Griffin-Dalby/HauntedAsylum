@@ -92,8 +92,8 @@ world_channel.interaction:route()
     end)
 
     :on('trigger', function(req, res)
-        local object_id:string, prompt_id:string = unpack(req.data)
-    
+        local object_id:string, prompt_id:string, inst:Instance = unpack(req.data)
+
         if not object_id or type(object_id)~='string'
             or not objects_cache:hasEntry(object_id) then
             res.reject('Invalid object_id'); return end
@@ -103,7 +103,7 @@ world_channel.interaction:route()
             or not object.prompts[prompt_id] then
             res.reject('Invalid prompt_id'); return end
         local prompt = object.prompts[prompt_id]
-        local success, message = prompt:trigger(req.caller)
+        local success, message = prompt:trigger(inst, req.caller)
 
         if success then
             res.data(true)

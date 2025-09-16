@@ -20,6 +20,8 @@ local types = require(script.Parent.Parent.types)
 
 --]] Sawdust
 --]] Settings
+local prompt_scale_range = {.75, 1.5}
+
 --]] Constants
 local is_client = runService:IsClient()
 
@@ -43,6 +45,8 @@ function promptUi.new(builder_data: types.PromptUiBuilder) : types.PromptUi
     --]] Construct Data
     self.uuid = https:GenerateGUID()
     self.root_ui = builder_data.root_ui:Clone()
+    self.orig_scale = self.root_ui.Size
+    self.max_range = 12.5
 
     self.env = {}
     self.env.root = self.root_ui
@@ -77,10 +81,12 @@ function promptUi:render(target: BasePart, information: {})
     local target_i = table.find(self.targets, root_target)
     if not target_i then
         table.insert(self.targets, root_target) end
+
     if self.__runtime then return end
 
     local l_target_upd = 1
-    local target
+    local ui_descs = self.root_ui:GetDescendants() --> Cache ui Descendants
+
     self.__runtime = runService.Heartbeat:Connect(function(dT)
         --> Distance
         local camera_pos = workspace.CurrentCamera.CFrame.Position+workspace.CurrentCamera.CFrame.LookVector
@@ -93,17 +99,26 @@ function promptUi:render(target: BasePart, information: {})
                 end
             end
             if not max[1] then
-                warn(`All targets exhausted, unrendering promptUI!`)
+                warn(`All targets exhausted, unrendering promptUi!`)
                 self:unrender()
                 return end
-            target = max[2]
+            self.target = max[2]
         end
 
         --> Render UI
+        local ui_dist = (camera_pos-self.target.Position).Magnitude
+        local min_ui_dist = 2
+
+        local t = math.clamp((ui_dist-min_ui_dist)/(self.max_range-min_ui_dist), 0, 1)
+        local scale_multi = prompt_scale_range[2]*(1-t)+prompt_scale_range[1]*t
+        self.root_ui.Size = UDim2.new( 
+            self.orig_scale.X.Scale*scale_multi, self.orig_scale.X.Offset*scale_multi,
+            self.orig_scale.Y.Scale*scale_multi, self.orig_scale.Y.Offset*scale_multi )
+
         self.root_ui.Parent = prompt_container
         
         local screen_center = Vector2.new(camera.ViewportSize.X/2, camera.ViewportSize.Y/2)
-        local vector, onScreen = camera:WorldToViewportPoint(target.Position)
+        local vector, onScreen = camera:WorldToViewportPoint(self.target.Position)
         local targetPos = Vector2.new(vector.X, vector.Z)
         local distance = (targetPos-screen_center).Magnitude
 
@@ -116,9 +131,8 @@ function promptUi:render(target: BasePart, information: {})
         local max_dist = math.max(camera.ViewportSize.X, camera.ViewportSize.Y)/2
         local normalized = math.clamp(1-(distance/max_dist), 0, 1)
         local base_z_idx = math.floor(normalized*100)
-        for _, child: GuiObject in pairs(self.root_ui:GetDescendants()) do
+        for _, child: GuiObject in pairs(ui_descs) do
             if not child:IsA('GuiObject') then continue end
-
             child.ZIndex = base_z_idx+child.ZIndex
         end
 
@@ -145,6 +159,13 @@ function promptUi:unrender(target: BasePart)
     end
     
 end
+
+function promptUi:set_max_range(range: number)
+    assert(range, `Attempt to :set_max_range() to nil value!`)
+    assert(type(range) == 'number', 
+        `Attempt to :set_max_range() to a non-number!`)
+
+    self.max_range = range end
 
 function promptUi:set_object(object_name: string)
     self.update.object(object_name) end

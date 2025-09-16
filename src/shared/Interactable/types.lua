@@ -97,6 +97,8 @@ export type BuilderEnv = {
 export type _self_prompt_ui = {
     env: BuilderEnv,
     root_ui: Frame,
+    orig_scale: UDim2,
+    max_range: number,
 
     zindex: number,
 
@@ -119,6 +121,8 @@ function prompt_ui.new() : PromptUi end
 
 function prompt_ui:render(target: BasePart) end
 function prompt_ui:unrender() end
+
+function prompt_ui:set_max_range(range: number) end
 
 function prompt_ui:set_object(object_name: string) end
 function prompt_ui:set_action(action: string) end
@@ -199,10 +203,10 @@ export type InteractablePrompt = typeof(setmetatable({} :: _self_prompt, prompt)
 
 function prompt.new(opts: _prompt_options): InteractablePrompt end
 
-function prompt:trigger(triggered_player: Player) end
+function prompt:trigger(instance: Instance, triggered_player: Player) end
 
 function prompt:enable(instance: Instance) end
-function prompt:disable() end
+function prompt:disable(instance: Instance) end
 
 function prompt:setAction(new_action: string) end
 function prompt:setTargeted(targeted: boolean) end

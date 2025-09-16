@@ -98,6 +98,8 @@ helper.verify.instance = function(provided) : Instance
             table.insert(instances, child)
         end
 
+        if #instances==0 then
+            error(`Found 0 instances to attach this object to!`) end
         return instances
     elseif typeof(provided) == 'Instance' then
         return {provided}
