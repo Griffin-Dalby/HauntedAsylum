@@ -12,10 +12,17 @@
 local replicatedStorage = game:GetService('ReplicatedStorage')
 local entity = require(replicatedStorage.Shared.Entity)
 
+local sawdust = require(replicatedStorage.Sawdust)
+local cdn = sawdust.core.cdn
+
+local entity_provider = cdn.getProvider('entity')
+
 return function()
 
-    local self = entity.new({ id='test', name='Test Entity' })
+    local self = entity.new('example')
 
+    --] Define States
+    --#region
     self.idle
         :hook('enter', function(env)
         
@@ -38,13 +45,17 @@ return function()
         
         end)
 
-    self.chase = self.fsm:event('chase')
+    self.chase = self.fsm:state('chase')
         :hook('enter', function(env)
             
         end)
         :hook('exit', function(env)
         
         end)
+
+    --#endregion
+
+    self:spawn()
 
     return self
 

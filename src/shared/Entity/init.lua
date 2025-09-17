@@ -21,6 +21,10 @@ local rig = require(script.rig)
 local sawdust = require(replicatedStorage.Sawdust)
 
 local fsm = sawdust.core.states
+local cdn = sawdust.core.cdn
+
+--] CDN
+local entity_provider = cdn.getProvider('entity')
 
 --]] Settings
 --]] Constants
@@ -29,17 +33,17 @@ local fsm = sawdust.core.states
 local entity = {}
 entity.__index = entity
 
-function entity.new(identity: {id: string, name: string}) : types.Entity
+function entity.new(id: string) : types.Entity
     local self = setmetatable({} :: types.self_entity, entity)
 
-    assert(identity.id, `Attempt to create a new entity with a nilset id!`)
-    assert(identity.name, `Attempt to create a new entity with a nilset name!`)
-    
-    assert(type(identity.id) == 'string', `Type mismatch for Argument 1, a {type(identity.id)} was provided, but a string was expected.`)
-    assert(type(identity.name) == 'string', `Type mismatch for Argument 2, a {type(identity.name)} was provided, but a string was expected.`)
+    assert(id, `Attempt to create a new entity with a nilset id!`)
+    assert(type(id) == 'string', `Type mismatch for Argument 1, a {type(id)} was provided, but a string was expected.`)
+    self.id = id
 
-    self.id = identity.id
-    self.name = identity.name
+    assert(entity_provider:hasAsset(id), `Failed to find metadata for entity w/ provided id "{id}"`)
+    local asset = entity_provider:getAsset(id)
+
+    --] Define States
     self.fsm = fsm.create()
 
     self.idle = self.fsm:state('idle')
@@ -47,11 +51,14 @@ function entity.new(identity: {id: string, name: string}) : types.Entity
 
     self.fsm:switchState('idle')
 
-    return self
-end
+    --] Rig
+    self.rig = rig.new{
+        id = id,
+        model = asset.appearance.model,
+        spawns = asset.behavior.spawn_points
+    }
 
-function entity:rig(rig_data: types.RigData)
-    self.rig = rig.new(rig_data)
+    return self
 end
 
 function entity:defineAnimation(state: string, animation_id: number)
@@ -63,6 +70,10 @@ function entity:defineAnimation(state: string, animation_id: number)
     animation.AnimationId = `rbxassetid://{animation_id}`
 
     self.rig.animator:defineAnimation(state, animation_id)
+end
+
+function entity:spawn(spawn_part: BasePart?)
+    self.rig:spawn(spawn_part)
 end
 
 return entity
