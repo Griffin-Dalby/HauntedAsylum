@@ -16,3 +16,6 @@ trace.json
 # Wally
 Packages/
 wally.lock
+
+# LuaU Language Server
+sourcemap.json

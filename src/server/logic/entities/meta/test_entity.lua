@@ -38,7 +38,7 @@ return function()
         
         end)
 
-    self.chase
+    self.chase = self.fsm:event('chase')
         :hook('enter', function(env)
             
         end)
