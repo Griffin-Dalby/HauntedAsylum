@@ -17,7 +17,7 @@ workspace:WaitForChild('doors'):WaitForChild('RedDoor')
 workspace.doors:WaitForChild('BlueDoor')
 workspace.doors:WaitForChild('GreenDoor')
 
-local door_open = false
+local doors_open = {}
 
 return function ()
     local test_object = interactable.newObject{
@@ -30,17 +30,17 @@ return function ()
     local test_prompt = test_object:newPrompt{
         prompt_id = 'interact',
         action = 'Interact',
-        cooldown = 1,
+        cooldown = .5,
     }
     test_prompt.triggered:connect(function(self, door: Model, player: Player)
         local hinge = door.Parent.PrimaryPart:FindFirstChildWhichIsA('HingeConstraint')
 
-        if not door_open then
+        if not doors_open[door] then
+            doors_open[door] = true
             hinge.TargetAngle = 90
-            door_open = true
         else
+            doors_open[door] = nil
             hinge.TargetAngle = 0
-            door_open = false
         end
     end)
 
