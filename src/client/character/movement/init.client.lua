@@ -23,8 +23,8 @@ local controller = require(script.controller)
 --]] Modules
 --]] Settings
 local keybinds = {
-    crouch = {Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonL3},
-    sprint = {Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonR3}
+    crouch = {Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonR3},
+    sprint = {Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3}
 }
 
 --]] Constants
