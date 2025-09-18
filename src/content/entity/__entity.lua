@@ -16,7 +16,9 @@ export type EntityTemplate = {
     },
 
     behavior: {
-        spawn_points: {BasePart}
+        spawn_points: {BasePart},
+
+        find_target: (rig_model: Model) -> BasePart
     }
 }
 

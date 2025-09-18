@@ -19,11 +19,15 @@ local entity = {}
 entity.__index = entity
 
 export type self_entity = {
+    asset: {},
     id: string,
     fsm: fsm_types.StateMachine,
 
     idle: fsm_types.SawdustState,
     patrol: fsm_types.SawdustState,
+
+    rig: EntityRig,
+    nav: EntityNavigator,
 }
 export type Entity = typeof(setmetatable({} :: self_entity, entity))
 
@@ -62,5 +66,18 @@ export type EntityAnimator = typeof(setmetatable({} :: self_animator, animator))
 
 function animator.new() : EntityAnimator end
 function animator:defineAnimation(state: string, animation: Animation) end
+
+--[[ ENTITY NAVIGATOR ]]--
+local navigator = {}
+navigator.__index = navigator
+
+export type self_navigator = {
+    rig: EntityRig,
+
+    target: Player?,
+}
+export type EntityNavigator = typeof(setmetatable({} :: self_navigator, navigator))
+
+function navigator.new(rig: EntityRig) : EntityNavigator end
 
 return __

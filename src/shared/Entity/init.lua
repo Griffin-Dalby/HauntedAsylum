@@ -16,6 +16,7 @@ local replicatedStorage = game:GetService('ReplicatedStorage')
 --]] Module
 local types = require(script.types)
 local rig = require(script.rig)
+local nav = require(script.navigate)
 
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
@@ -41,7 +42,7 @@ function entity.new(id: string) : types.Entity
     self.id = id
 
     assert(entity_provider:hasAsset(id), `Failed to find metadata for entity w/ provided id "{id}"`)
-    local asset = entity_provider:getAsset(id)
+    self.asset = entity_provider:getAsset(id)
 
     --] Define States
     self.fsm = fsm.create()
@@ -54,9 +55,11 @@ function entity.new(id: string) : types.Entity
     --] Rig
     self.rig = rig.new{
         id = id,
-        model = asset.appearance.model,
-        spawns = asset.behavior.spawn_points
+        model = self.asset.appearance.model,
+        spawns = self.asset.behavior.spawn_points
     }
+
+    self.nav = nav.new(self)
 
     return self
 end
