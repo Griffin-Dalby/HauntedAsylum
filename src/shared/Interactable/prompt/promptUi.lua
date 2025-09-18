@@ -39,6 +39,9 @@ local camera = workspace.CurrentCamera
 local promptUi = {}
 promptUi.__index = promptUi
 
+--[[ promptUi.new(builder_data: PromptUiBuilder) : PromptUi
+    This constructs a PromptUi with cohesive update triggers from a
+    provided PromptUiBuilder. ]]
 function promptUi.new(builder_data: types.PromptUiBuilder) : types.PromptUi
     local self = setmetatable({} :: types._self_prompt_ui, promptUi)
 
@@ -76,7 +79,10 @@ function promptUi.new(builder_data: types.PromptUiBuilder) : types.PromptUi
     return self
 end
 
-function promptUi:render(target: BasePart, information: {})
+--[[ promptUi:render(target: BasePart)
+    Starts the render runtime if there isn't one already, and no matter
+    what add the target to the internal targets list. ]]
+function promptUi:render(target: BasePart)
     local root_target = target:IsA('Model') and target.PrimaryPart or target
     local target_i = table.find(self.targets, root_target)
     if not target_i then
@@ -140,6 +146,11 @@ function promptUi:render(target: BasePart, information: {})
         self.zindex = base_z_idx
     end)
 end
+
+--[[ promptUi:unrender(target: BasePart)
+    Removes the "target" arument from the internal targets table, and if
+    no targets remain the render runtime will be disconnected and everything
+    cleaned up. ]]
 function promptUi:unrender(target: BasePart)
     local root_target = target:IsA('Model') and target.PrimaryPart or target
     local target_i = table.find(self.targets, root_target)
@@ -160,6 +171,7 @@ function promptUi:unrender(target: BasePart)
     
 end
 
+--]] Sets the maximum range you can interact with this prompt with.
 function promptUi:set_max_range(range: number)
     assert(range, `Attempt to :set_max_range() to nil value!`)
     assert(type(range) == 'number', 
@@ -167,17 +179,29 @@ function promptUi:set_max_range(range: number)
 
     self.max_range = range end
 
+--]] Calls the internal update function for set_object (update.object())
 function promptUi:set_object(object_name: string)
     self.update.object(object_name) end
+
+--]] Calls the internal update function for set_action (update.action())
 function promptUi:set_action(action: string)
     self.update.action(action) end
+
+--]] Calls the internal update function for set_targeted (update.targeted())
 function promptUi:set_targeted(targeted: boolean)
     self.update.targeted(targeted) end
+
+--]] Calls the internal update function for set_binding (update.binding())
 function promptUi:set_binding(key: Enum.KeyCode, type: Enum.UserInputType)
     self.update.binding(key, type) end
 
+
+
+--]] Calls the internal update function for set_cooldown (update.set_cooldown())
 function promptUi:set_cooldown(on_cooldown: boolean)
     self.update.set_cooldown(on_cooldown) end
+
+--]] Calls the internal update connection function for cooldown_tick (update.cooldown_tick())
 function promptUi:cooldown_tick(time_remaining: number)
     self.update.cooldown_tick(time_remaining) end
 

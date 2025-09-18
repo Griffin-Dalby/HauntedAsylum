@@ -36,6 +36,10 @@ local __debug = false
 local object = {}
 object.__index = object
 
+--[[ object.new(opts: ObjectOptions): InteractableObject
+    Constructor function for a object, this will sanitize & parse data
+    and then authorize the prompt with the server if needed (on the
+    client). ]]
 function object.new(opts: types._object_options): types.InteractableObject
     assert(opts.object_id, `Missing "object_id" from Object Options! This is a unique identified for this specific object.`)
     assert(type(opts.object_id) == 'string', 
@@ -89,6 +93,8 @@ function object.new(opts: types._object_options): types.InteractableObject
     return self
 end
 
+--[[ object:newPrompt(opts: PromptOptions) : InteractablePrompt
+    Wraps prompt.new() and integrates prompt with the current object.]]
 function object:newPrompt(opts: types._prompt_options): types.InteractablePrompt
     assert(opts, `Attempt to create new Interactable Prompt w/o options argument!`)
     assert(type(opts) == 'table',

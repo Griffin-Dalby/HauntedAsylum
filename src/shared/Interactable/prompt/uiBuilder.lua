@@ -43,36 +43,71 @@ function builder.new(root_ui: Frame) : types.PromptUiBuilder
     return self
 end
 
+--[[ :set_object((env, object_name: string) -> nil)
+    Use this to update the Object Name field of your PromptUi. ]]
 function builder:set_object(handler: (env: types.BuilderEnv, object_name: string) -> nil) : types.PromptUiBuilder
     self._set_object = wrap_f('object_name', handler)
     return self end
+
+--[[ :set_action((env, action: string) -> nil)
+    Use this to update the Action field of your PromptUi.]]
 function builder:set_action(handler: (env: types.BuilderEnv, action: string) -> nil) : types.PromptUiBuilder
     self._set_action = wrap_f('action', handler)
     return self end
+
+--[[ :set_targeted((env, targeted: boolean) -> nil)
+    Use this to convey a "Targeted" status.
+    "true" should make the prompt look as if it's selected.
+    "false" should make the prompt fade away, or be in the background. ]]
 function builder:set_targeted(handler: (env: types.BuilderEnv, targeted: boolean) -> nil) : types.PromptUiBuilder
     self._set_targeted = wrap_f('targeted', handler)
     return self end
+
+--[[ :set_binding((env, code: Enum.KeyCode, type: Enum.UserInputType) -> nil
+    You can use the passed code & type to determine which key needs to
+    be displayed in the ui. )]]
 function builder:set_binding(handler: (env: types.BuilderEnv, code: Enum.KeyCode, type: Enum.UserInputType) -> nil) : types.PromptUiBuilder
     self._set_binding = wrap_f('binding', handler)
     return self end
 
+--[[ :pre_trigger((env) -> nil)
+    Use this to display effects immediately after the player triggers
+    a prompt, before it's authorized. (Only use for immediate VFX) ]]
 function builder:pre_trigger(handler: (env: types.BuilderEnv) -> nil) : types.PromptUiBuilder
     self._pre_trigger = wrap_f('pre_trigger', handler)
     return self end
+
+--[[ :triggered((env, success: boolean, fail_reason: string) -> nil)
+    Use this to display the confirmation of a prompt trigger result
+    from the server. (Don't use for immediate VFX) ]]
 function builder:triggered(handler: (env: types.BuilderEnv, success: boolean, fail_reason: string) -> nil) : types.PromptUiBuilder
     self._triggered = wrap_f('triggered', handler)
     return self end
 
+--[[ :no_cooldown()
+    Disables cooldown logic for this prompt. ]]
 function builder:no_cooldown() : types.PromptUiBuilder
     self._no_cooldown = true
     return self end
+
+--[[ :set_cooldown((env, on_cooldown: boolean) -> nil)
+    Use this to display a change in cooldown.
+    "true" should make the prompt feel like it's active & usable
+    "false" should make the prompt feel like it's inactive & unusable, temporarily. ]]
 function builder:set_cooldown(handler: (env: types.BuilderEnv, on_cooldown: boolean) -> nil) : types.PromptUiBuilder
     self._set_cooldown = wrap_f('on_cooldown', handler)
     return self end
+
+--[[ :update_cooldown((env, time_Remaining: number) -> nil)
+    Use this to intercept cooldown progress & convey how long
+    a cooldown is going to take. ]]
 function builder:update_cooldown(handler: (env: types.BuilderEnv, time_remaining: number) -> nil) : types.PromptUiBuilder
     self._update_cooldown = wrap_f('last_cooldown_tick', handler)
     return self end
 
+--[[ :compile()
+    Turns everything described in the prompt options into a PromptUi,
+    which can be used by the prompt object. ]]
 function builder:compile() : types.PromptUi
     assert(self._set_object, `You need to :set_object(f(object_name: string)), and change your ui's name text!`)
     assert(self._set_action, `You need to :set_action(f(action: string)), and change your ui's action text!`)
