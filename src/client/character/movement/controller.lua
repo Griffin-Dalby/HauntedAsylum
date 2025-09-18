@@ -10,11 +10,20 @@
 --]]
 
 --]] Services
+local replicatedStorage = game:GetService('ReplicatedStorage')
 local starterPlayer = game:GetService('StarterPlayer')
 local runService = game:GetService('RunService')
 local players = game:GetService('Players')
 
 --]] Modules
+--]] Sawdust
+local sawdust = require(replicatedStorage.Sawdust)
+
+local cache = sawdust.core.cache
+
+--> Cache
+local movement_cache = cache.findCache('movement')
+
 --]] Settings
 local base_speed   = starterPlayer.CharacterWalkSpeed
 local sprint_speed = base_speed + 6
@@ -69,6 +78,9 @@ function controller.new() : MovementController
     self.is_crouched = false
     self.is_jumping = false
 
+    movement_cache:setValue('is_sprinting', false)
+    movement_cache:setValue('is_crouched', false)
+
     self.speed = {base_speed, base_speed}
     self.fov = {base_fov, base_fov}
     self.cam_y_off = {0, 0}
@@ -115,11 +127,13 @@ end
 
 function controller:setCrouch(is_crouched: boolean)
     self.is_crouched = is_crouched
+    movement_cache:setValue('is_crouched', is_crouched)
 end
 
 function controller:setSprint(is_sprinting: boolean)
     if not self.can_sprint then return end
     self.is_sprinting = is_sprinting
+    movement_cache:setValue('is_sprinting', is_sprinting)
 end
 
 return controller

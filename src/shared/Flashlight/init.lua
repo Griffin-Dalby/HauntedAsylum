@@ -20,10 +20,14 @@ local players = game:GetService('Players')
 local sawdust = require(replicatedStorage.Sawdust)
 
 local networking = sawdust.core.networking
+local cache = sawdust.core.cache
 local cdn = sawdust.core.cdn
 
 --> Networking
 local mechanics = networking.getChannel('mechanics')
+
+--> Cache
+local movement_cache = cache.findCache('movement')
 
 --> CDN
 local sfx_cdn = cdn.getProvider('sfx')
@@ -114,14 +118,14 @@ function flashlight.new(player: Player?) : Flashlight
                         12.5*dT )
 
                     local cam_pitch = math.deg(math.asin(-camera.CFrame.LookVector.Y))
-                    local max_pitch = 70
-                    local pitch_fade_zone = 35
+                    local max_pitch = 75
+                    local pitch_fade_zone = 45
 
                     local fade_fac = 1
                     if math.abs(cam_pitch) > (max_pitch - pitch_fade_zone) then
                         fade_fac = math.max(0, (max_pitch - math.abs(cam_pitch)) / pitch_fade_zone) end
 
-                    local lead_strength = 2.65
+                    local lead_strength = movement_cache:getValue('is_crouched') and 3 or 2.65
                     local lead_vector = Vector3.new(
                         mouse_delta.X*lead_strength*fade_fac,
                         -mouse_delta.Y*(lead_strength*.6)*fade_fac,
