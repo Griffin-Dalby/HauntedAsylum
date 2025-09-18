@@ -39,6 +39,11 @@ local item_cdn = cdn.getProvider('item')
 local item = {}
 item.__index = item
 
+--[[ item.new(id: string) : Item
+    Constructor function for a new item.
+    "id" argument must match an asset located in content.item, which
+    will control the appearance & behavior for this item. From this
+    object, you can spawn multiple different items.]]
 function item.new(id: string) : types.Item
     local self = setmetatable({} :: types.self_item, item)
 
