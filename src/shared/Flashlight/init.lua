@@ -12,6 +12,7 @@
 --]] Services
 local replicatedStorage = game:GetService('ReplicatedStorage')
 local soundService = game:GetService('SoundService')
+local userInputs = game:GetService('UserInputService')
 local runService = game:GetService('RunService')
 local players = game:GetService('Players')
 
@@ -52,9 +53,10 @@ export type self = {
     toggled: boolean,
     power: number,
 
+    light_behavior: RBXScriptConnection,
+
     --> Client
     light_part: Part,
-    light: SpotLight,
     visual_runtime: RBXScriptConnection,
 }
 export type Flashlight = typeof(setmetatable({} :: self, flashlight))
@@ -92,15 +94,62 @@ function flashlight.new(player: Player?) : Flashlight
         self.light_part = script.LightPart:Clone()
         self.light_part.Parent = workspace.CurrentCamera
 
-        self.light = self.light_part:FindFirstChild('Light') :: SpotLight
+        local mouse_delta = Vector2.zero
+        local raw_mouse_delta = Vector2.zero
 
-        self.visual_runtime = runService.Heartbeat:Connect(function()
+        self.mouse_connection = userInputs.InputChanged:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseMovement then
+                raw_mouse_delta = Vector2.new(input.Delta.X, input.Delta.Y)
+            end
+        end)
+
+        self.visual_runtime = runService.Heartbeat:Connect(function(dT)
             if self.light_part and root_part then
-                self.light_part.CFrame = workspace.CurrentCamera.CFrame
-                self.light.Enabled = self.toggled
+                self.light_part.DirectLight.Enabled = self.toggled
+                self.light_part.WideLight.Enabled = self.toggled
+                
+                if self.toggled then
+                    mouse_delta = mouse_delta:Lerp(
+                        raw_mouse_delta*.035,
+                        12.5*dT )
 
-                self.light_part.CFrame = self.light_part.CFrame:Lerp(
-                    camera.CFrame - root_part.CFrame.LookVector, .6 )
+                    local cam_pitch = math.deg(math.asin(-camera.CFrame.LookVector.Y))
+                    local max_pitch = 70
+                    local pitch_fade_zone = 35
+
+                    local fade_fac = 1
+                    if math.abs(cam_pitch) > (max_pitch - pitch_fade_zone) then
+                        fade_fac = math.max(0, (max_pitch - math.abs(cam_pitch)) / pitch_fade_zone) end
+
+                    local lead_strength = 2.65
+                    local lead_vector = Vector3.new(
+                        mouse_delta.X*lead_strength*fade_fac,
+                        -mouse_delta.Y*(lead_strength*.6)*fade_fac,
+                        0
+                    )
+
+                    local base_dir = camera.CFrame.LookVector
+                    local lead_dir = (base_dir + camera.CFrame:VectorToWorldSpace(lead_vector)).Unit
+                    
+                    local flashlight_offset = Vector3.new(.4, -.2, 0)
+                    local target_cf  = CFrame.lookAt(
+                        camera.CFrame.Position + camera.CFrame:VectorToWorldSpace(flashlight_offset),
+                        camera.CFrame.Position + lead_dir*5
+                    )
+
+                    local movement_intensity = mouse_delta.Magnitude
+                    local lerp_speed = math.clamp(6+movement_intensity*3, 4, 18)
+
+                    self.light_part.CFrame = self.light_part.CFrame:Lerp(target_cf, lerp_speed*dT)
+                    raw_mouse_delta = raw_mouse_delta*.9
+                else
+                    -- When flashlight is off, position it near your hand
+                    local hand_offset = Vector3.new(0.3, -0.4, 0.1)
+                    self.light_part.CFrame = self.light_part.CFrame:Lerp(
+                        camera.CFrame + camera.CFrame:VectorToWorldSpace(hand_offset), 
+                        4 * dT
+                    )
+                end
             else
                 if not root_part then
                     character = self.player.Character or nil
