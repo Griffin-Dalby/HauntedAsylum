@@ -24,6 +24,9 @@ local types = require(script.Parent.Parent.types)
 local animator = {}
 animator.__index = animator
 
+--[[ animator.new() : EntityAnimator
+    Constructs a new EntityAnimator that holds a table of animations
+    attached to the state id. ]]
 function animator.new() : types.EntityAnimator
     local self = setmetatable({} :: types.self_animator, animator)
 
@@ -32,6 +35,8 @@ function animator.new() : types.EntityAnimator
     return self
 end
 
+--[[ animator:defineAnimation(state: string, animation: Animation)
+    Attaches a animation object to a specific state id. ]]
 function animator:defineAnimation(state: string, animation: Animation)
     assert(state, `:defineAnimation() state argument is undefined!`)
     assert(animation, `:defineAnimation() animation argument is undefined!`)

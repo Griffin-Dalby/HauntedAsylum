@@ -34,6 +34,11 @@ local entity_provider = cdn.getProvider('entity')
 local entity = {}
 entity.__index = entity
 
+--[[ entity.new(id: string) : Entity
+    Constructor function for the entity object, which will locate
+    the entity's asset data and build behaviors and appearance.
+    This will provide a FSM, rig & animation controller, and
+    a pathfinding / navigation system. ]]
 function entity.new(id: string) : types.Entity
     local self = setmetatable({} :: types.self_entity, entity)
 
@@ -64,6 +69,10 @@ function entity.new(id: string) : types.Entity
     return self
 end
 
+--[[ entity:defineAnimation(state: string, animation_id: number)
+    This will create an animation based off the animation id, and attach
+    it to the animation system, where it'll automatically play when
+    the state that's defined is active in the state manager. ]]
 function entity:defineAnimation(state: string, animation_id: number)
     assert(animation_id, `:defineAnimation() missing animation_id!`)
     assert(type(animation_id) == 'number',
@@ -75,6 +84,9 @@ function entity:defineAnimation(state: string, animation_id: number)
     self.rig.animator:defineAnimation(state, animation_id)
 end
 
+--[[ entity:spawn(spawn_part: BasePart?)
+    This will spawn this entity either at the specified base_part,
+    or at one of the random specified ones. ]]
 function entity:spawn(spawn_part: BasePart?)
     self.rig:spawn(spawn_part)
 end

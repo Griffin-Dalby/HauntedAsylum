@@ -28,6 +28,10 @@ local simplePath = require(replicatedStorage.Shared.SimplePath)
 local navigator = {}
 navigator.__index = navigator
 
+--[[ navigator.new(entity: Entity)
+    Constructor function for the navigator system that generates a path
+    and the logic to search and walk towards a target based off of the
+    entities behaviorial patterns. ]]
 function navigator.new(entity: types.Entity): types.EntityNavigator
     local self = setmetatable({} :: types.self_navigator, navigator)
 
@@ -69,10 +73,6 @@ function navigator.new(entity: types.Entity): types.EntityNavigator
     end)
 
     return self
-end
-
-function navigator:setTarget(player: Player?)
-    self.player = player
 end
 
 return navigator

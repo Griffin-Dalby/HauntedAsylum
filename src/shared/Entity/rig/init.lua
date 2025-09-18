@@ -23,6 +23,9 @@ local animator = require(script.animator)
 local rig = {}
 rig.__index = rig
 
+--[[ rig.new(rig_dataL RigData) : EntityRig
+    Constructor function for a rig object, which will take in a couple
+    of physical values to generate a rig controller ]]
 function rig.new(rig_data: types.RigData) : types.EntityRig
     local self = setmetatable({} :: types.self_rig, rig)
 
@@ -48,6 +51,9 @@ function rig.new(rig_data: types.RigData) : types.EntityRig
     return self
 end
 
+--[[ rig:spawn(spawn_part: BasePart?)
+    This will spawn this rig into the physical world at either the
+    specified spawn_part or a random spawn point ]]
 function rig:spawn(spawn_part: BasePart?)
     local function doSpawn(part: BasePart)
         local half_vert = self.model:GetBoundingBox().Y/2
