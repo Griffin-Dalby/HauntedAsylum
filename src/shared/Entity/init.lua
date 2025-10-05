@@ -12,6 +12,7 @@
 
 --]] Services
 local replicatedStorage = game:GetService('ReplicatedStorage')
+local runService = game:GetService('RunService')
 
 --]] Module
 local types = require(script.types)
@@ -21,14 +22,20 @@ local nav = require(script.navigate)
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 
+local networking = sawdust.core.networking
 local fsm = sawdust.core.states
 local cdn = sawdust.core.cdn
+
+--] Networking
+local world_channel = networking.getChannel('world')
 
 --] CDN
 local entity_provider = cdn.getProvider('entity')
 
 --]] Settings
 --]] Constants
+local is_client = runService:IsClient()
+
 --]] Variables
 --]] Entity
 local entity = {}
@@ -53,18 +60,28 @@ function entity.new(id: string) : types.Entity
     self.fsm = fsm.create()
 
     self.idle = self.fsm:state('idle')
-    self.patrol = self.fsm:state('patrol')
+    self.chase = self.fsm:state('chase')
+
+    self.idle:transition('chase'):when(function(env) return env.shared.target~=nil end)
+    self.chase:transition('idle'):when(function(env) return env.shared.target==nil end)
 
     self.fsm:switchState('idle')
 
-    --] Rig
-    self.rig = rig.new{
-        id = id,
-        model = self.asset.appearance.model,
-        spawns = self.asset.behavior.spawn_points
-    }
-
-    self.nav = nav.new(self)
+    if not is_client then
+        --] Rig
+        self.rig = rig.new{
+            id = id,
+            model = self.asset.appearance.model,
+            spawns = self.asset.behavior.spawn_points
+        }
+        self.nav = nav.new(self)
+    else
+        --] Replication
+        world_channel.entity:route()
+            :on('target', function(req)
+                if req.data[1]~=id then return end
+                self.fsm.environment.target = req.data[2] end)
+    end
 
     return self
 end

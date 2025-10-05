@@ -20,6 +20,13 @@ local types = require(script.Parent.types)
 local simplePath = require(replicatedStorage.Shared.SimplePath)
 
 --]] Sawdust
+local sawdust = require(replicatedStorage.Sawdust)
+
+local networking = sawdust.core.networking
+
+--> Networking channels
+local world_channel = networking.getChannel('world')
+
 --]] Settings
 --]] Constants
 --]] Variables
@@ -39,8 +46,11 @@ function navigator.new(entity: types.Entity): types.EntityNavigator
     local rig = entity.rig
 
     self.rig = rig
-    self.path = simplePath.new(rig.model)
-    self.path.Visualize = true
+    self.path = simplePath.new(rig.model, {
+        AgentWidth = 2,
+        AgentHeight = 3,
+    })
+    self.path.Visualize = false
 
     self.goal_root = nil
 
@@ -60,13 +70,31 @@ function navigator.new(entity: types.Entity): types.EntityNavigator
         if target_update_delta<1 then return end
         target_update_delta = 0
 
-        local targeted_root: BasePart = entity.asset.behavior.find_target(self.rig.model)
+        local targeted_root: BasePart = entity.asset.behavior.find_target(entity.fsm.environment, self.rig.model)
         self.goal_root = targeted_root
     end)
 
     local last_goal_root = nil
     self.walker = runService.Heartbeat:Connect(function(dT)
+        if (self.goal_root == nil) and (self.path._status ~= 'Idle') then
+            entity.fsm.environment.target = nil
+            world_channel.entity:with()
+                :broadcastGlobally()
+                :intent('target')
+                :data(entity.id, nil)
+                :fire()
+
+            self.path:Stop()
+        end
+
         if self.goal_root ~= last_goal_root then
+            entity.fsm.environment.target = self.goal_root
+            world_channel.entity:with()
+                :broadcastGlobally()
+                :intent('target')
+                :data(entity.id, self.goal_root)
+                :fire()
+                
             last_goal_root = self.goal_root
             runPath()
         end

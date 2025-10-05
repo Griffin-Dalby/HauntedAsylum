@@ -11,6 +11,8 @@
 --]]
 
 --]] Services
+local runService = game:GetService('RunService')
+
 --]] Modules
 local types = require(script.Parent.types)
 local animator = require(script.animator)
@@ -18,6 +20,8 @@ local animator = require(script.animator)
 --]] Sawdust
 --]] Settings
 --]] Constants
+local is_client = runService:IsClient()
+
 --]] Variables
 --]] Rig
 local rig = {}
@@ -42,7 +46,7 @@ function rig.new(rig_data: types.RigData) : types.EntityRig
     if not workspace.environment:FindFirstChild('entities') then
         Instance.new('Folder', workspace.environment).Name = 'entities'; end
 
-    self.model = rig_data.model
+    self.model = rig_data.model:Clone()
     self.model.Name = rig_data.id or self.model.Name
 
     self.spawns = rig_data.spawns
@@ -55,12 +59,16 @@ end
     This will spawn this rig into the physical world at either the
     specified spawn_part or a random spawn point ]]
 function rig:spawn(spawn_part: BasePart?)
+    assert(not is_client, `Cannot :spawn() rig on the client-side!`)
+
     local function doSpawn(part: BasePart)
         local half_vert = self.model:GetBoundingBox().Y/2
         local spawn = part.Position+Vector3.new(0,half_vert,0)
 
         self.model.PrimaryPart.CFrame = CFrame.new(spawn)
         self.model.Parent = workspace.environment.entities
+
+        self.model.PrimaryPart:SetNetworkOwner(nil)
     end
 
     if spawn_part then --> Spawn @ specifed spawn.

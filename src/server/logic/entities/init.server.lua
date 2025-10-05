@@ -22,7 +22,7 @@
 --> Setup entities
 for _, entity_data: ModuleScript in pairs(script.meta:GetChildren()) do
     if not entity_data:IsA('ModuleScript') then continue end
-    local generator = require(entity_data)
+    local generator = require(entity_data) --]] TODO: Possibly just access the meta and build it here?
 
     generator()
 end
