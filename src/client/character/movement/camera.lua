@@ -27,7 +27,7 @@ local movement_cache = cache.findCache('movement')
 --]] Settings
 local bob_freq = 4                         --] Bob cycle speed
 
-local s_bob_ampl, w_bob_ampl = .8, .3      --] Bob intensity
+local s_bob_ampl, w_bob_ampl = 1.25, .1    --] Bob intensity
 local s_tilt_ampl, w_tilt_ampl = 1.5, .5   --] Side-to-side movement
 local s_horiz_sway, w_horiz_sway = 1.2, .4 --] Cam roll/tilt in degs
 
@@ -41,10 +41,13 @@ camera.__index = camera
 type self = {
     camera: Camera,
     runtime: RBXScriptConnection,
+
+    camera_offset: Vector3,
+    camera_angles: Vector2,
 }
 export type CameraController = typeof(setmetatable({} :: self, camera))
 
-function camera.init() : CameraController
+function camera.init(env: {}) : CameraController
     local self = setmetatable({} :: self, camera)
 
     local player = players.LocalPlayer
@@ -54,17 +57,11 @@ function camera.init() : CameraController
     local function fetchCharacter()
         assert(player.Character, `Failed to fetch character for camera controller!`)
         character = player.Character
-        humanoid = character:FindFirstChildOfClass('Humanoid')
-        head = character:FindFirstChild('Head')
-
-        for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                part.LocalTransparencyModifier = 1
-                part.Transparency = 1
-            end
-        end
+        humanoid = character:WaitForChild('Humanoid')
+        head = character:WaitForChild('Head')
     end
 
+    self.camera_offset = Vector3.new(0, 0, 0)
     self.camera_angles = Vector2.new(0, 0)
     self.mouse_sensitivity = .4
     self.mouse_capture = userInputs.InputChanged:Connect(function(input, gameProcessedEvent)
@@ -84,6 +81,15 @@ function camera.init() : CameraController
 
     self.camera = workspace.CurrentCamera
     self.runtime = runService.Heartbeat:Connect(function(deltaTime)
+        if character then
+            for _, part in pairs(character:GetDescendants()) do
+                if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                    part.LocalTransparencyModifier = 1
+                    part.Transparency = 1
+                end
+            end
+        end
+
         --> Force FPV
         player.CameraMaxZoomDistance = 0
         player.CameraMinZoomDistance = 0
@@ -160,7 +166,7 @@ function camera.init() : CameraController
             base_cf = base_cf * tilt_rotation
         end
         
-        self.camera.CFrame = base_cf
+        self.camera.CFrame = base_cf + self.camera_offset
     end)
 
     return self

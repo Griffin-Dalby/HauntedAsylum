@@ -66,7 +66,7 @@ type self = {
 }
 export type MovementController = typeof(setmetatable({} :: self, controller))
 
-function controller.new() : MovementController
+function controller.new(env: {}) : MovementController
     local self = setmetatable({} :: self, controller)
 
     --> Initalize
@@ -101,7 +101,7 @@ function controller.new() : MovementController
         self.cam_y_off[2] = self.is_crouched and -2 or 0
         self.cam_y_off[1] = lerp(self.cam_y_off[1], self.cam_y_off[2], .25)
 
-        self.humanoid.CameraOffset = Vector3.new(0, self.cam_y_off[1], 0)
+        env.camera.camera_offset = Vector3.new(0, self.cam_y_off[1], 0)
 
         --> Move Speed
         if self.is_sprinting then --> Only sprint when moving
