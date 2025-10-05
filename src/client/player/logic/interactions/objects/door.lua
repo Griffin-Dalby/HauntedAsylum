@@ -23,6 +23,7 @@ return function ()
             interact_gui = 'basic', --> See interactions.promptUis.basic
             interact_bind = { desktop = Enum.KeyCode.E, console = Enum.KeyCode.ButtonX },
             authorized = true,
+            range = 45
         },
 
         instance = {workspace.doors, {}},

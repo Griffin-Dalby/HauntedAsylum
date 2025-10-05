@@ -25,6 +25,9 @@ return function ()
         object_name = 'Door',
 
         instance = {workspace.doors, {}},
+        prompt_defs = {
+            range = 45
+        }
     }
 
     local test_prompt = test_object:newPrompt{
