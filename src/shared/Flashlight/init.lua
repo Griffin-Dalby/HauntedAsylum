@@ -35,7 +35,7 @@ local sfx_cdn = cdn.getProvider('sfx')
 --]] Modules
 --]] Settings
 local drain_multi = .25 --> How fast power drains
-local power_update_delta = 4 --> Duration between each update from server-client
+local power_update_time = 4 --> Duration between each update from server-client
 
 local button_sfx = {
     [true]  = sfx_cdn:getAsset('flashlight_button_pressed'),
@@ -69,6 +69,8 @@ function flashlight.new(player: Player?) : Flashlight
     local self = setmetatable({} :: self, flashlight)
 
     self.player = is_client and players.LocalPlayer or player
+    local env: {} = is_client and player or nil
+
     local character = self.player.Character or self.player.CharacterAdded:Wait()
     local root_part = character.PrimaryPart
 
@@ -82,7 +84,7 @@ function flashlight.new(player: Player?) : Flashlight
             
             if not is_client then
                 time_since_update+=dT
-                if time_since_update>power_update_delta then
+                if time_since_update>power_update_time then
                     time_since_update = 0
                     mechanics.flashlight:with()
                         :intent('update_power')
@@ -136,15 +138,26 @@ function flashlight.new(player: Player?) : Flashlight
                     local lead_dir = (base_dir + camera.CFrame:VectorToWorldSpace(lead_vector)).Unit
                     
                     local flashlight_offset = Vector3.new(.4, -.2, 0)
+
                     local target_cf  = CFrame.lookAt(
                         camera.CFrame.Position + camera.CFrame:VectorToWorldSpace(flashlight_offset),
                         camera.CFrame.Position + lead_dir*5
                     )
 
                     local movement_intensity = mouse_delta.Magnitude
-                    local lerp_speed = math.clamp(6+movement_intensity*3, 4, 18)
+                    local lerp_speed = math.clamp(6+movement_intensity*8, 4, 18)
+
+                    local bob_off = env.camera.bob_offset or Vector3.zero
+                    local is_sprinting = env.movement.is_sprinting or false
+                    local bob_vec = camera.CFrame:VectorToWorldSpace(Vector3.new(
+                        bob_off.X*(is_sprinting and 5 or 15),
+                        bob_off.Y*(is_sprinting and 2.5 or 15),
+                        bob_off.Z*0
+                    ))
+                    self.bob_smooth = self.bob_smooth and self.bob_smooth:Lerp(bob_vec, 10*dT) or bob_vec
 
                     self.light_part.CFrame = self.light_part.CFrame:Lerp(target_cf, lerp_speed*dT)
+                    self.light_part.CFrame += self.bob_smooth
                     raw_mouse_delta = raw_mouse_delta*.9
                 else
                     -- When flashlight is off, position it near your hand
@@ -171,7 +184,6 @@ end
 function flashlight:toggle(button_pressed: boolean) : boolean
     if is_client then
         --> Authenticate
-
         if self.toggled and button_pressed then
             self.toggled = false
 
