@@ -161,6 +161,8 @@ function prompt:trigger(instance: Instance, triggered_player: Player?)
     local object_id, prompt_id = self.prompt_defs.object_id, self.prompt_id
 
     instance = instance or self.prompt_ui.target :: Instance
+    if not instance then return end
+
     self.pre_trigger:fire(self, instance)
 
     if not self.active_cooldowns[instance] and self.attached_instances then
@@ -205,7 +207,6 @@ function prompt:trigger(instance: Instance, triggered_player: Player?)
             self.prompt_ui.update.triggered(success, fail_reason)
             self.triggered:fire(self, instance)
 
-            
         end
     else
         if inst_cooldowns[triggered_player] then return false end

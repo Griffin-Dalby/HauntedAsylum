@@ -155,6 +155,8 @@ function secure.new() : InteractionSecurer
                     local instance_flagger = prompt_flagger:findChild(instance)
                     
                     local object_root = instance:IsA('Model') and instance.PrimaryPart or instance
+                    if not object_root or not object_root['Position'] then continue end
+                    
                     local dist = (root_pos-object_root.Position).Magnitude
                     
                     local in_range = dist<prompt.prompt_defs.range --> Character in-range check
