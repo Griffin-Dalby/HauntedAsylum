@@ -34,7 +34,9 @@ local sfx_cdn = cdn.getProvider('sfx')
 
 --]] Modules
 --]] Settings
-local drain_multi = .25 --> How fast power drains
+local __debug = false
+
+local drain_multi = .85 --> How fast power drains
 local power_update_time = 4 --> Duration between each update from server-client
 
 local button_sfx = {
@@ -48,6 +50,52 @@ local camera = workspace.CurrentCamera
 
 --]] Variables
 --]] Functions
+function lerp(a,b, t)
+    return a+(b-a)*t
+end
+
+function flashlightFalloff(value_range: {}, alpha_range: {}, current)
+    return 
+        (value_range[2]-value_range[1])
+        *math.pow((current-alpha_range[1])/(alpha_range[1]-alpha_range[2]), 4)+value_range[1]
+end
+
+function colorFromKelvin(kelvin)
+    kelvin = math.clamp(kelvin, 1000, 40000) / 100
+
+    local r, g, b
+
+    -- Red
+    if kelvin <= 66 then
+        r = 255
+    else
+        r = 329.698727446 * ((kelvin - 60) ^ -0.1332047592)
+    end
+
+    -- Green
+    if kelvin <= 66 then
+        g = 99.4708025861 * math.log(kelvin) - 161.1195681661
+    else
+        g = 288.1221695283 * ((kelvin - 60) ^ -0.0755148492)
+    end
+
+    -- Blue
+    if kelvin >= 66 then
+        b = 255
+    elseif kelvin <= 19 then
+        b = 0
+    else
+        b = 138.5177312231 * math.log(kelvin - 10) - 305.0447927307
+    end
+
+    return Color3.fromRGB(
+        math.clamp(r, 0, 255),
+        math.clamp(g, 0, 255),
+        math.clamp(b, 0, 255)
+    )
+end
+
+
 --]] Flashlight
 local flashlight = {}
 flashlight.__index = flashlight
@@ -80,6 +128,10 @@ function flashlight.new(player: Player?) : Flashlight
     local time_since_update = 0
     self.light_behavior = runService.Heartbeat:Connect(function(dT)
         if self.toggled then
+            if self.power <= 0 then
+                self.power = 0
+                self.toggled = false
+            end
             self.power -= drain_multi*dT
             
             if not is_client then
@@ -92,11 +144,83 @@ function flashlight.new(player: Player?) : Flashlight
                         :broadcastTo{self.player}
                         :fire()
                 end
+            else
+                --> UI
+                local flash_bar: Frame = self.player.PlayerGui.UI.Stats.Flashlight
+                if flash_bar:GetAttribute('transparency') then
+                    flash_bar:SetAttribute('transparency', nil) end
+                flash_bar.BackgroundTransparency = .25
+                flash_bar.Bar.BackgroundTransparency = 0
+                flash_bar.Bar.Size =
+                    UDim2.new(self.power/100, 0, 1, 0)
+
+                --> Charge's affect on the light
+                local charge_range = {100, 0}
+
+                local direct_brightness = {.42, 0}
+                local wide_brightness = {.05, 0}
+
+                local r = {255, 255}
+                local g = {255, 165}
+                local b = {255, 50}
+
+                local direct_fBright = flashlightFalloff(direct_brightness, charge_range, self.power)
+                local wide_fBright = flashlightFalloff(wide_brightness, charge_range, self.power)
+
+                self.light_part.DirectLight.Brightness, self.light_part.WideLight.Brightness = 
+                    direct_fBright, wide_fBright
+
+                local minKelvin, maxKelvin = 6500, 1800
+                local t = (self.power - charge_range[1]) / (charge_range[2] - charge_range[1])
+                local kelvin = minKelvin + (maxKelvin - minKelvin) * (t^2)
+
+                local light_color = colorFromKelvin(kelvin)
+                self.light_part.DirectLight.Color, self.light_part.WideLight.Color =
+                    light_color, light_color
+            end
+        else
+            if is_client then
+                local flash_bar: Frame = self.player.PlayerGui.UI.Stats.Flashlight
+                if flash_bar:GetAttribute('transparency') then
+                    return end
+                local this_id = tick()
+                flash_bar:SetAttribute('transparency', this_id)
+                
+                local alpha = 0
+
+                local conn; conn = runService.Heartbeat:Connect(function()
+                    local transp_attb = flash_bar:GetAttribute('transparency')
+                    if transp_attb~=this_id then
+                        conn:Disconnect()
+                        conn = nil
+
+                        flash_bar.BackgroundTransparency = .75
+                        flash_bar.Bar.BackgroundTransparency = .75
+                        return
+                    end
+
+                    alpha+=dT*7.5
+                    flash_bar.BackgroundTransparency = lerp(.25, .75, alpha)
+                    flash_bar.Bar.BackgroundTransparency = lerp(0, .75, alpha)
+                    
+                    if alpha>=1 then
+                        conn:Disconnect()
+                        conn = nil
+                        flash_bar.BackgroundTransparency = .75
+                        flash_bar.Bar.BackgroundTransparency = .75
+                    end
+                end)
             end
         end
     end)
 
     if is_client then
+        local s = mechanics.flashlight:with()
+            :intent('init')
+            :timeout(5)
+            :invoke():wait()
+        assert(s, `Server abstains from initalizing our flashlight!`)
+
         self.light_part = script.LightPart:Clone()
         self.light_part.Parent = workspace.CurrentCamera
 
@@ -176,6 +300,11 @@ function flashlight.new(player: Player?) : Flashlight
                 end
             end
         end)
+    
+        self.update_power = mechanics.flashlight:route():on('update_power', function(req, res)
+            if __debug then print(`[{script.Name}] Synced power to server-time! (diff: {self.power-req.data[1]})`) end
+            self.power = req.data[1]
+        end)
     end
 
     return self
@@ -186,11 +315,34 @@ function flashlight:toggle(button_pressed: boolean) : boolean
         --> Authenticate
         if self.toggled and button_pressed then
             self.toggled = false
+            mechanics.flashlight:with()
+                :intent('toggle')
+                :data(self.toggled)
+                :invoke():catch(function(data)
+                    if __debug then print(`[{script.Name}] Server synced toggle status to {data[1]}`) end
+                    self.toggled = data[1]
+                end)
 
             return true
         elseif not self.toggled and not button_pressed then
             self.toggled = true
+            mechanics.flashlight:with()
+                :intent('toggle')
+                :data(self.toggled)
+                :invoke():catch(function(data)
+                    if __debug then print(`[{script.Name}] Server synced toggle status to {data[1]}`) end
+                    self.toggled = data[1]
+                end)
+
         end
+    else
+        --> Sanitize
+        local target_state = button_pressed
+        if target_state==self.toggled then return false end
+
+        --> Finalize
+        self.toggled = target_state
+        return true
     end
 end
 

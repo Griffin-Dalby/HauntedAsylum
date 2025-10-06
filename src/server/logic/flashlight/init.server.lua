@@ -29,14 +29,51 @@ local players_cache = cache.findCache('players')
 
 --]] Settings
 --]] Constants
+
 --]] Variables
 --]] Functions
 --]] Script
 mechanics.flashlight:route()
     :on('init', function(req, res)
+        local timeout = false
+        task.delay(4, function()
+            timeout = true end)
+        local table = players_cache:findTable('session')
+
+        repeat task.wait(0) until table:hasEntry(req.caller) or timeout
+        if timeout and not table:hasEntry(req.caller) then
+            warn(`[{script.Name}] Player "{req.caller.Name}.{req.caller.UserId}" couldn't be found in session data!`)
+            res.reject('timeout')
+            return end
+
         local player_session_data = players_cache:findTable('session'):getValue(req.caller)
-        assert(not player_session_data.flashlight,
-            `Player ({req.caller.Name}.{req.caller.UserId}) attempted to double-init flashlight.`)
+        if player_session_data.flashlight then
+            warn(`[{script.Name}] Player "{req.caller.Name}.{req.caller.UserId}" attempted to double initalize their flashlight!`)
+            res.reject('cannot double initalize!')
+            return end
         
         player_session_data.flashlight = flashlight.new(req.caller)
+        res.send()
+    end)
+    :on('toggle', function(req, res)
+        if req.data[1]==nil then
+            res.reject('missing toggle_state')
+            return end
+
+        local player_session_data = players_cache:findTable('session'):getValue(req.caller)
+        local p_flashlight = player_session_data.flashlight :: flashlight.Flashlight
+        if not player_session_data.flashlight then
+            warn(`[{script.Name}] Player "{req.caller.Name}.{req.caller.UserId}" attempted to toggle their flashlight, without an attached flashlight instance!`)
+            res.reject('flashlight not initalized')
+            return end
+            
+        local toggle_state = req.data[1]
+        local success = p_flashlight:toggle(toggle_state)
+
+        if success then
+            res.data()
+            res.send()
+        else
+            res.reject(p_flashlight.toggled)
+        end
     end)
