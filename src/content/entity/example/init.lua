@@ -43,21 +43,34 @@ example.behavior = {
         --] Define States
         --#region
         self.idle
-            :hook('enter', function(env)
+            :hook('enter', 'c_enter', function(env)
                 print('idle')
+                if is_client then
+                    
+                else
+
+                end
             end)
-            :hook('exit', function(env)
+            :hook('exit', 'c_exit', function(env)
                 
             end)
-            :hook('update', function(env)
+            :hook('update', 'c_update', function(env)
                 
             end)
 
         self.chase
-            :hook('enter', function(env)
+            :hook('enter', 'c_enter', function(env)
                 print('chase')
+                if is_client then
+                    -- local c_target =
+                    -- local c_target_p = players:GetPlayerFromCharacter(c_target.Parent)
+                    -- if c_target_p~=players.LocalPlayer then return end
+                    
+                else
+
+                end
             end)
-            :hook('exit', function(env)
+            :hook('exit', 'c_exit', function(env)
                 
             end)
 
