@@ -39,7 +39,8 @@ local player_store = profileStore.New('PlayerStore', saved_template)
 local profiles: {[Player]: typeof(player_store:StartSessionAsync())} = {}
 
 function handlePlayerData(player: Player, profile: player_store.Profile<typeof(saved_template)>)
-    
+    persistent:setValue(player, profile)
+    session:setValue(player, table.clone(session_template))
 end
 
 function loadPlayerData(player: Player)
