@@ -60,41 +60,9 @@ function flashlightFalloff(value_range: {}, alpha_range: {}, current)
         *math.pow((current-alpha_range[1])/(alpha_range[1]-alpha_range[2]), 4)+value_range[1]
 end
 
-function colorFromKelvin(kelvin)
-    kelvin = math.clamp(kelvin, 1000, 40000) / 100
-
-    local r, g, b
-
-    -- Red
-    if kelvin <= 66 then
-        r = 255
-    else
-        r = 329.698727446 * ((kelvin - 60) ^ -0.1332047592)
-    end
-
-    -- Green
-    if kelvin <= 66 then
-        g = 99.4708025861 * math.log(kelvin) - 161.1195681661
-    else
-        g = 288.1221695283 * ((kelvin - 60) ^ -0.0755148492)
-    end
-
-    -- Blue
-    if kelvin >= 66 then
-        b = 255
-    elseif kelvin <= 19 then
-        b = 0
-    else
-        b = 138.5177312231 * math.log(kelvin - 10) - 305.0447927307
-    end
-
-    return Color3.fromRGB(
-        math.clamp(r, 0, 255),
-        math.clamp(g, 0, 255),
-        math.clamp(b, 0, 255)
-    )
+local function getFlicker(intensity)
+    return 1 - intensity * (0.5 + 0.5 * math.noise(os.clock() * 8))
 end
-
 
 --]] Flashlight
 local flashlight = {}
@@ -126,6 +94,8 @@ function flashlight.new(player: Player?) : Flashlight
     self.power = 100
     
     local time_since_update = 0
+
+    
     self.light_behavior = runService.Heartbeat:Connect(function(dT)
         if self.toggled then
             if self.power <= 0 then
@@ -160,23 +130,31 @@ function flashlight.new(player: Player?) : Flashlight
                 local direct_brightness = {.42, 0}
                 local wide_brightness = {.05, 0}
 
-                local r = {255, 255}
-                local g = {255, 165}
-                local b = {255, 50}
-
                 local direct_fBright = flashlightFalloff(direct_brightness, charge_range, self.power)
                 local wide_fBright = flashlightFalloff(wide_brightness, charge_range, self.power)
 
+                local flicker_multi = 1
+                if self.power <= 10 and self.power >= 0 then
+                    if not self._cutoutTimer then self._cutoutTimer = 0 end
+                    if self._cutoutTimer > 0 then
+                        flicker_multi = 0
+                        self._cutoutTimer -= 1
+                    elseif math.random() < 0.04 then
+                        self._cutoutTimer = math.random(2, 6)
+                        flicker_multi = 0
+                    else
+                        flicker_multi = getFlicker(.5)
+                    end
+                elseif self.power <= 16 and self.power > 10 then
+                    flicker_multi = getFlicker(.4)*(math.random()<.04 and 1.5 or 1)
+                elseif self.power <= 22 and self.power > 16 then
+                    flicker_multi = getFlicker(.275)
+                elseif self.power <= 30 and self.power > 22 then
+                    flicker_multi = getFlicker(.15)
+                end
+
                 self.light_part.DirectLight.Brightness, self.light_part.WideLight.Brightness = 
-                    direct_fBright, wide_fBright
-
-                local minKelvin, maxKelvin = 6500, 1800
-                local t = (self.power - charge_range[1]) / (charge_range[2] - charge_range[1])
-                local kelvin = minKelvin + (maxKelvin - minKelvin) * (t^2)
-
-                local light_color = colorFromKelvin(kelvin)
-                self.light_part.DirectLight.Color, self.light_part.WideLight.Color =
-                    light_color, light_color
+                    direct_fBright*flicker_multi, wide_fBright*flicker_multi/2
             end
         else
             if is_client then
