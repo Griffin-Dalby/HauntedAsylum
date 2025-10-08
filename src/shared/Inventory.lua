@@ -47,21 +47,15 @@ function inventory.new(player: Player) : Inventory
     self.contents = {}
 
     if is_client then
-        local finished, success = false, false
-        mechanics.inventory:with()
+        local s = mechanics.inventory:with()
             :intent('instantiate')
-            :timeout(2)
-            :invoke()
-                :andThen(function() success = true end)
-                :finally(function() finished = true end)
-                :catch(function(data)
-                    local err = data[1]
-                    error(`There was an issue contacting the server for inventory instantiation!`)
-                    if err then warn(`An error was provided: {err}`) end
-                end)
+            :timeout(4)
+            :invoke():wait()
         
-        repeat task.wait(0) until finished
-        if not success then return end
+        if not s then
+            warn(`[{script.Name}] Server abstains from instantiating inventory object!`)
+            return false
+        end
     else
         if inventory_cache:hasEntry(player) then
             return false, 'Inventory already exists' end
