@@ -154,7 +154,7 @@ function secure.new() : InteractionSecurer
                     end
                     local instance_flagger = prompt_flagger:findChild(instance)
                     
-                    local object_root = instance:IsA('Model') and instance.PrimaryPart or instance
+                    local object_root = if instance:IsA('Model') then instance.PrimaryPart else instance
                     if not object_root or not object_root['Position'] then continue end
                     
                     local dist = (root_pos-object_root.Position).Magnitude
