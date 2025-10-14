@@ -14,6 +14,8 @@ local replicatedStorage = game:GetService('ReplicatedStorage')
 local runService = game:GetService('RunService')
 
 --]] Modules
+local Titem = require(replicatedStorage.Shared.Item.types)
+
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 
@@ -27,6 +29,8 @@ local mechanics = networking.getChannel('mechanics')
 local inventory_cache = cache.findCache('inventory')
 
 --]] Settings
+local max_inventory_length = 5
+
 --]] Constants
 local is_client = runService:IsClient()
 
@@ -64,6 +68,15 @@ function inventory.new(player: Player) : Inventory
     end
 
     return self
+end
+
+function inventory:insert(item: Titem.Item)
+    if #self.contents>=max_inventory_length then
+        warn(`[{script.Name}] Inventory full!`)
+        return 'full' end
+    self.contents[#self.contents+1] = item
+
+    return true
 end
 
 return inventory
