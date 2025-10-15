@@ -95,7 +95,6 @@ function flashlight.new(player: Player?) : Flashlight
     
     local time_since_update = 0
 
-    
     self.light_behavior = runService.Heartbeat:Connect(function(dT)
         if self.toggled then
             if self.power <= 0 then
@@ -291,28 +290,23 @@ end
 function flashlight:toggle(button_pressed: boolean) : boolean
     if is_client then
         --> Authenticate
+        local updated = false
         if self.toggled and button_pressed then
             self.toggled = false
-            mechanics.flashlight:with()
-                :intent('toggle')
-                :data(self.toggled)
-                :invoke():catch(function(data)
-                    if __debug then print(`[{script.Name}] Server synced toggle status to {data[1]}`) end
-                    self.toggled = data[1]
-                end)
-
-            return true
+            updated = true
         elseif not self.toggled and not button_pressed then
             self.toggled = true
-            mechanics.flashlight:with()
-                :intent('toggle')
-                :data(self.toggled)
-                :invoke():catch(function(data)
-                    if __debug then print(`[{script.Name}] Server synced toggle status to {data[1]}`) end
-                    self.toggled = data[1]
-                end)
-
+            updated = true
         end
+
+        mechanics.flashlight:with()
+            :intent('toggle')
+            :data(self.toggled)
+            :invoke():catch(function(data)
+                if __debug then print(`[{script.Name}] Server synced toggle status to {data[1]}`) end
+                self.toggled = data[1]
+            end)
+        return updated and self.toggled==false
     else
         --> Sanitize
         local target_state = button_pressed
