@@ -21,6 +21,8 @@ local https = game:GetService('HttpService')
 local types = require(script.types)
 local modelWrap = require(script.ModelWrap)
 
+local interactable = require(replicatedStorage.Shared.Interactable)
+
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 
@@ -33,6 +35,9 @@ local world = networking.getChannel('world')
 
 --> Cache
 local item_cache = cache.findCache('items')
+
+local interactable_cache = cache.findCache('interactable')
+local objects_cache = interactable_cache:findTable('objects')
 
 --> CDN
 local item_cdn = cdn.getProvider('item')
@@ -62,13 +67,25 @@ function item.new(id: string, uuid: string?) : types.Item
     self.id = id
     self.uuid = if is_client then uuid else `{id}.{https:GenerateGUID(false)}`
     
+    if not objects_cache:hasEntry(id) then
+        local item_asset = item_cdn:getAsset(id)
+        local new_object = interactable.newObject{
+            object_id = `item.{id}`,
+            object_name = item_asset.appearance.name,
+
+            instance = {workspace.items}
+        }
+    end
+    
     if is_client then
-        self.model = modelWrap.new(workspace.items:FindFirstChild(uuid))
-        assert(self.model, `Failed to locate item in folder! ({uuid})`)
+        local found_model = workspace.items:WaitForChild(uuid)
+        assert(found_model, `Failed to locate item in folder! ({uuid})`)
 
-
+        self.model = modelWrap.new(found_model)
     else
-        self.model = modelWrap.new(item_cdn:getAsset(id).apppearance.model:Clone())
+        self.model = modelWrap.new(item_cdn:getAsset(id).appearance.model:Clone())
+        self.model.instance.Name = self.uuid
+        self.model.instance.Parent = workspace.items
         world.item:with()
             :broadcastGlobally()
             :intent('instantiate')
@@ -82,9 +99,19 @@ end
 
 --[[ item:setTransform(transform: CFrame)
     Sets the transform of this item to the specified Transform CFrame. ]]
-function item:setTransform(transform: CFrame)
+function item:setTransform(transform: CFrame, update_clients: boolean)
+    if update_clients==nil then update_clients=true end
+
     assert(transform, `item:setTransform() argument #1 (transform) missing or nil!`)
-    self.model:transform(transform)
+    self.model:setTransform(transform)
+    self.transform = transform
+    if not is_client and update_clients==true then
+        world.item:with()
+            :broadcastGlobally()
+            :intent('transform')
+            :data(self.uuid, transform)
+            :fire()
+    end
 end
 
 --[[ item:pickup(player: Player?)
@@ -92,15 +119,13 @@ end
 function item:pickup(player: Player?)
     if not is_client then
         assert(player, `item:pickup() argument #1 (player) missing or nil!`)
-    
         return true
     else
         local s, payload = world.item:with()
             :intent('pickup')
             :data(self.uuid)
             :invoke():wait()
-        if s then
-            return true
+        if s then return true
         else
             warn(`Failed to pick up item w/ uuid {self.uuid}`)
             if payload then

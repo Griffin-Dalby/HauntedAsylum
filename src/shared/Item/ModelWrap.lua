@@ -32,11 +32,12 @@ function modelWrap.new(instance: Instance) : types.ModelWrap
     local self = setmetatable({} :: types.self_modelWrap, modelWrap)
 
     self.instance = instance
+    self.transform = CFrame.new()
 
     return self
 end
 
-function modelWrap:transform(transform: CFrame)
+function modelWrap:setTransform(transform: CFrame)
     if self.instance:IsA('Model') then
         self.instance:PivotTo(transform)
     elseif self.instance:IsA('BasePart') then
@@ -44,6 +45,8 @@ function modelWrap:transform(transform: CFrame)
     else
         error(`Can't find according transformer for {self.instance:GetAttribute('uuid')}`)
     end
+
+    self.transform = transform
 end
 
 return modelWrap

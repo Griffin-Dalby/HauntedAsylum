@@ -27,10 +27,13 @@ function item:setTransform(transform: CFrame) end
 local modelWrap = {}
 modelWrap.__index = modelWrap
 
-export type self_modelWrap = {}
+export type self_modelWrap = {
+    instance: Instance,
+    transform: CFrame
+}
 export type ModelWrap = typeof(setmetatable({}::self_modelWrap, modelWrap))
 
 function modelWrap.new(uuid: string) : ModelWrap end
-function modelWrap:transform(transform: CFrame) end
+function modelWrap:setTransform(transform: CFrame) end
 
 return __
