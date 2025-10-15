@@ -13,10 +13,6 @@
 local replicatedStorage = game:GetService('ReplicatedStorage')
 local interactable = require(replicatedStorage.Shared.Interactable)
 
-workspace:WaitForChild('doors'):WaitForChild('RedDoor')
-workspace.doors:WaitForChild('BlueDoor')
-workspace.doors:WaitForChild('GreenDoor')
-
 local doors_open = {}
 
 return function ()

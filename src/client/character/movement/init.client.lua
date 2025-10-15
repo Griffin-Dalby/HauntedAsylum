@@ -25,10 +25,17 @@ local flashlight = require(replicatedStorage.Shared.Flashlight)
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 
+local cache = sawdust.core.cache
 local cdn = sawdust.core.cdn
 
 --> CDN
 local sfx_cdn = cdn.getProvider('sfx')
+
+--> Cache
+local c_env = cache.findCache('env')
+task.delay(5, function()
+    print(cache)
+end)
 
 --]] Settings
 local keybinds = {
@@ -53,6 +60,10 @@ local env = {}
 env.camera = camera.init(env)
 env.movement = controller.new(env)
 env.flashlight = flashlight.new(env)
+
+c_env:setValue('camera', env.camera)
+c_env:setValue('movement', env.movement)
+c_env:setValue('flashlight', env.flashlight)
 
 --]] Crouch Behavior
 contextActions:BindAction('crouch', function(_, inputState)

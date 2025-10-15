@@ -25,6 +25,8 @@ local cache = sawdust.core.cache
 local movement_cache = cache.findCache('movement')
 
 --]] Settings
+local mouse_sensitivity = .4
+
 local bob_freq = 4                         --] Bob cycle speed
 
 local s_bob_ampl, w_bob_ampl = 1.25, .1    --] Bob intensity
@@ -63,13 +65,13 @@ function camera.init(env: {}) : CameraController
 
     self.camera_offset = Vector3.new(0, 0, 0)
     self.camera_angles = Vector2.new(0, 0)
-    self.mouse_sensitivity = .4
+    
     self.mouse_capture = userInputs.InputChanged:Connect(function(input, gameProcessedEvent)
         if input.UserInputType == Enum.UserInputType.MouseMovement then
             local delta = input.Delta
             self.camera_angles = self.camera_angles + Vector2.new(
-                -delta.Y * self.mouse_sensitivity,
-                -delta.X * self.mouse_sensitivity
+                -delta.Y * mouse_sensitivity,
+                -delta.X * mouse_sensitivity
             )
 
             self.camera_angles = Vector2.new(
@@ -79,16 +81,22 @@ function camera.init(env: {}) : CameraController
         end
     end)
 
+    self.controlling = true
+
     self.camera = workspace.CurrentCamera
     self.runtime = runService.Heartbeat:Connect(function(deltaTime)
         if character then
             for _, part in pairs(character:GetDescendants()) do
                 if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+                    if part:HasTag('FPV_Visible') then continue end
+
                     part.LocalTransparencyModifier = 1
                     part.Transparency = 1
                 end
             end
         end
+
+        if not self.controlling then return end
 
         --> Force FPV
         player.CameraMaxZoomDistance = 0
@@ -170,6 +178,10 @@ function camera.init(env: {}) : CameraController
     end)
 
     return self
+end
+
+function camera:setControl(can_control: boolean)
+    self.controlling = can_control
 end
 
 return camera

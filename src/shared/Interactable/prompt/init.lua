@@ -223,6 +223,18 @@ function prompt:trigger(instance: Instance, triggered_player: Player?)
     end
 end
 
+--[[ prompt:attachTo(Instance...)
+    This will attach this prompt to an instance. ]]
+function prompt:attachTo(...: Instance)
+    local args = {...}
+    for i, instance: Instance in pairs(args) do
+        if table.find(self.attached_instances, instance) then
+            warn(`[{script.Name}] prompt:attachTo() instance @ index {i} is already attached to this prompt!`)
+            return end
+        table.insert(self.attached_instances, instance)
+    end
+end
+
 --[[ VISIBILITY ]]--
 
 --[[ prompt:enable(instance: Instance)
@@ -232,7 +244,13 @@ end
 function prompt:enable(instance: Instance)
     self.enabled = true
     if is_client then
-        self.prompt_ui:render(instance)
+        if not instance then
+            for _, instance in pairs(self.attached_instances) do
+                self.prompt_ui:render(instance)
+            end
+        else
+            self.prompt_ui:render(instance)
+        end
     end
 end
 
@@ -242,7 +260,13 @@ end
 function prompt:disable(instance: Instance)
     self.enabled = false
     if is_client then
-        self.prompt_ui:unrender(instance)
+        if not instance then
+            for _, instance in pairs(self.attached_instances) do
+                self.prompt_ui:unrender(instance)
+            end
+        else
+            self.prompt_ui:unrender(instance)
+        end
     end
 end
 

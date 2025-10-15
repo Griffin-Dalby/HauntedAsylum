@@ -36,6 +36,12 @@ local crouch_fov = base_fov - 10
 local acceleration = .1
 
 --]] Constants
+local player = players.LocalPlayer
+local character = player.Character
+local root_part = character:WaitForChild('HumanoidRootPart') :: Part
+
+local camera = workspace.CurrentCamera
+
 --]] Variables
 --]] Functions
 function lerp(a: number, b: number, t: number)
@@ -134,6 +140,40 @@ function controller:setSprint(is_sprinting: boolean)
     if not self.can_sprint then return end
     self.is_sprinting = is_sprinting
     movement_cache:setValue('is_sprinting', is_sprinting)
+end
+
+function controller:setHiding(is_hiding: boolean, hide_att: Attachment)
+    self.can_sprint = not is_hiding
+    self.can_crouch = not is_hiding
+    self.can_Jump = not is_hiding
+
+    if is_hiding then
+        self.is_sprinting = false
+        self.is_crouched = false
+        self.is_jumping = false
+
+        camera.CameraType = Enum.CameraType.Custom
+        runService:BindToRenderStep('hide_camera', Enum.RenderPriority.Camera.Value, function()
+            local rX, rY, rZ = camera.CFrame:ToOrientation()
+
+            local locker_f = hide_att.WorldCFrame.LookVector
+            local locker_y_rot = math.atan2(-locker_f.X, -locker_f.Z)
+
+            local rel_y = rY-locker_y_rot
+            if rel_y > math.pi then
+                rel_y=rel_y-2*math.pi
+            elseif rel_y < -math.pi then
+                rel_y=rel_y+2*math.pi
+            end
+
+            local lim_x = math.clamp(math.deg(rX), -30, 30)
+            local lim_y = math.clamp(math.deg(rel_y), -45, 45)
+            local final_y = locker_y_rot+math.rad(lim_y)
+            camera.CFrame = CFrame.new(hide_att.WorldCFrame.Position+Vector3.new(0, 2, 0))*CFrame.fromOrientation(math.rad(lim_x), final_y, rZ)
+        end)
+    else
+        runService:UnbindFromRenderStep('hide_camera')
+    end
 end
 
 return controller
