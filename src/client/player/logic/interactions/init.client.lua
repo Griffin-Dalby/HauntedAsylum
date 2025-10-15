@@ -32,6 +32,7 @@ local sawdust = require(replicatedStorage.Sawdust)
 local networking = sawdust.core.networking
 
 -- Networking
+local world_channel = networking.getChannel('world')
 
 --]] Settings
 --]] Constants
@@ -141,3 +142,14 @@ userInputService.InputBegan:Connect(function(key, gp)
     --> Trigger prompt
     prompt:trigger()
 end)
+
+--> Server Authority
+world_channel.interaction:route()
+    :on('attach_instances', function(req, res)
+        print('fired')
+        local object_id, prompt_id = req.data[1], req.data[2]
+        print(req.data)
+    end)
+world_channel.interaction:with()
+    :intent('ready')
+    :fire()

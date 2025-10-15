@@ -35,6 +35,7 @@ local item_cache = cache.findCache('items')
 --]] Script
 world.item:route()
     :on('instantiate', function(req, res)
+        print('instantiate')
         local new_item = Iitem.new(req.data[1], req.data[2])
         if req.data[3] then
             new_item:setTransform(req.data[3])
@@ -44,3 +45,4 @@ world.item:route()
         local this_item = item_cache:getValue(req.data[1]) :: Titem.Item
         this_item:setTransform(req.data[2])
     end)
+    

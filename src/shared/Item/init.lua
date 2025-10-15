@@ -67,14 +67,30 @@ function item.new(id: string, uuid: string?) : types.Item
     self.id = id
     self.uuid = if is_client then uuid else `{id}.{https:GenerateGUID(false)}`
     
+    local prompt_object
     if not objects_cache:hasEntry(id) then
         local item_asset = item_cdn:getAsset(id)
-        local new_object = interactable.newObject{
+        local defs = {
             object_id = `item.{id}`,
             object_name = item_asset.appearance.name,
 
-            instance = {workspace.items}
+            prompt_defs = {
+                interact_gui = 'basic',
+                interact_bind = { desktop=Enum.KeyCode.E, console=Enum.KeyCode.X},
+                authorized = true,
+                range = 45
+            },
+            instance = {workspace.items, {attributes={['item_id']=id}}},
         }
+
+        prompt_object = interactable.newObject(defs)
+        prompt_object:newPrompt{
+           prompt_id = 'pickup',
+           action = 'Pick Up',
+           cooldown = .5,
+        }
+    else
+        prompt_object = objects_cache:getValue(id)
     end
     
     if is_client then
@@ -85,6 +101,7 @@ function item.new(id: string, uuid: string?) : types.Item
     else
         self.model = modelWrap.new(item_cdn:getAsset(id).appearance.model:Clone())
         self.model.instance.Name = self.uuid
+        self.model.instance:SetAttribute('item_id', id)
         self.model.instance.Parent = workspace.items
         world.item:with()
             :broadcastGlobally()
@@ -92,6 +109,8 @@ function item.new(id: string, uuid: string?) : types.Item
             :data(self.id, self.uuid)
             :fire()
     end
+
+    prompt_object.prompts.pickup:attachTo(self.model.instance)
 
     item_cache:setValue(self.uuid, self)
     return self

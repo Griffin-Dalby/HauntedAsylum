@@ -44,15 +44,30 @@ end
 workspace.item_props:Destroy()
 
 function broadcastObjects(player: Player)
+    local sorted_items = {}
     for _, item: Titem.Item in pairs(item_cache:getContents()) do
+        if not sorted_items[item.id] then
+            sorted_items[item.id]={} end
+        table.insert(sorted_items[item.id], item.model.instance)
+
         world.item:with()
             :broadcastTo(player)
             :intent('instantiate')
             :data(item.id, item.uuid, item.model.transform)
             :fire()
     end
+
+    --]] Broadcast Prompts
+    for object_id: string, objects: {Instance} in pairs(sorted_items) do
+        world.interaction:with()
+            :broadcastTo(player)
+            :intent('attach_instances')
+            :data(object_id, 'pickup', objects)
+            :fire()
+    end
 end
 
-players.PlayerAdded:Connect(broadcastObjects)
-for _, player in pairs(players:GetPlayers()) do
-    broadcastObjects(player) end
+world.interaction:route()
+    :on('ready', function(req, res)
+        broadcastObjects(req.caller)
+    end)

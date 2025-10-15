@@ -204,6 +204,7 @@ export type InteractablePrompt = typeof(setmetatable({} :: _self_prompt, prompt)
 function prompt.new(opts: _prompt_options): InteractablePrompt end
 
 function prompt:trigger(instance: Instance, triggered_player: Player) end
+function prompt:attachTo(...: Instance) end
 
 function prompt:enable(instance: Instance) end
 function prompt:disable(instance: Instance) end

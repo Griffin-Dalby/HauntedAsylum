@@ -84,6 +84,15 @@ helper.verify.instance = function(provided) : Instance
         local function consider_params(instance)
             local fail = false
             for param_name, param_value in pairs(search_params) do
+                if param_name=='attributes' then
+                    for attb_name, attb_value in pairs(param_value) do
+                        if not instance:GetAttribute(attb_name) then fail=true; break end
+                        if instance:GetAttribute(attb_name)~=attb_value then fail=true; break end
+                    end
+                    continue
+                end
+                if fail then break end
+
                 if instance[param_name] ~= param_value then
                     fail = true
                     break end
@@ -98,8 +107,8 @@ helper.verify.instance = function(provided) : Instance
             table.insert(instances, child)
         end
 
-        if #instances==0 then
-            error(`Found 0 instances to attach this object to!`) end
+        -- if #instances==0 then
+        --     error(`Found 0 instances to attach this object to!`) end
         return instances
     elseif typeof(provided) == 'Instance' then
         return {provided}

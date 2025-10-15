@@ -233,6 +233,15 @@ function prompt:attachTo(...: Instance)
             return end
         table.insert(self.attached_instances, instance)
     end
+
+    print(':attachTo()')
+    if not is_client then
+        world_channel.interaction:with()
+            :broadcastGlobally()
+            :intent('attach_instances')
+            :data(self.prompt_defs.object_id, self.prompt_id, args)
+            :fire()
+    end
 end
 
 --[[ VISIBILITY ]]--
