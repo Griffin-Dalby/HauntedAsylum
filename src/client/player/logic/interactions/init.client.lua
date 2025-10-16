@@ -146,10 +146,14 @@ end)
 --> Server Authority
 world_channel.interaction:route()
     :on('attach_instances', function(req, res)
-        print('fired')
         local object_id, prompt_id = req.data[1], req.data[2]
-        print(req.data)
+        
     end)
+    :on('detach_instances', function(req, res)
+        local object_id, prompt_id = req.data[1], req.data[2]
+        
+    end)
+
 world_channel.interaction:with()
     :intent('ready')
     :fire()

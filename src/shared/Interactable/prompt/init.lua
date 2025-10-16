@@ -194,7 +194,7 @@ function prompt:trigger(instance: Instance, triggered_player: Player?)
                     :andThen(function() success = true end)
                     :finally(function() finished = true end)
                     :catch(function(err)
-                        error(`An issue occured while triggering prompt! ({object_id}.{prompt_id})`)
+                        warn(`An issue occured while triggering prompt! ({object_id}.{prompt_id})`)
                         if err[1] then
                             fail_reason = err[1]
                             warn(`A message was provided: {err[1]}`) end
@@ -223,24 +223,52 @@ function prompt:trigger(instance: Instance, triggered_player: Player?)
     end
 end
 
---[[ prompt:attachTo(Instance...)
+--[[ prompt:attach(Instance...)
     This will attach this prompt to an instance. ]]
-function prompt:attachTo(...: Instance)
+function prompt:attach(...: Instance)
     local args = {...}
     for i, instance: Instance in pairs(args) do
         if table.find(self.attached_instances, instance) then
-            warn(`[{script.Name}] prompt:attachTo() instance @ index {i} is already attached to this prompt!`)
+            warn(`[{script.Name}] prompt:attach() instance @ index {i} is already attached to this prompt!`)
             return end
         table.insert(self.attached_instances, instance)
+
+        if is_client then
+            self.prompt_ui:render(instance)
+        end
     end
 
-    print(':attachTo()')
     if not is_client then
         world_channel.interaction:with()
             :broadcastGlobally()
             :intent('attach_instances')
             :data(self.prompt_defs.object_id, self.prompt_id, args)
             :fire()
+    end
+end
+
+--[[ prompt:detach(Instance...)
+    This will detach this prompt from an instance. ]]
+function prompt:detach(...: Instance)
+    local args = {...}
+    for i, instance: Instance in pairs(args) do
+        if not table.find(self.attached_instances, instance) then
+            warn(`[{script.Name}] prompt:detach() instance @ index {i} is not attached to this prompt!`)
+            return end
+        table.remove(self.attached_instances, table.find(self.attached_instances, instance))
+    
+        if is_client then
+            self.prompt_ui:unrender(instance)
+        end
+    end
+
+    if not is_client then
+        world_channel.interaction:with()
+            :broadcastGlobally()
+            :intent('detach_instances')
+            :data(self.prompt_defs.object_id, self.prompt_id, args)
+            :fire()
+    else
     end
 end
 

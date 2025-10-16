@@ -75,6 +75,7 @@ function inventory:insert(item: Titem.Item)
         warn(`[{script.Name}] Inventory full!`)
         return 'full' end
     self.contents[#self.contents+1] = item
+    -- item:despawn()
 
     return true
 end
