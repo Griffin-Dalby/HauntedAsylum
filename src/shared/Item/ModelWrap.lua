@@ -49,4 +49,8 @@ function modelWrap:setTransform(transform: CFrame)
     self.transform = transform
 end
 
+function modelWrap:despawn()
+    self.instance.Parent = script
+end
+
 return modelWrap

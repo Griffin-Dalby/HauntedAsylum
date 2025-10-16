@@ -22,6 +22,7 @@ local types = require(script.types)
 local modelWrap = require(script.ModelWrap)
 
 local interactable = require(replicatedStorage.Shared.Interactable)
+local inventory    = require(replicatedStorage.Shared.Inventory)
 
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
@@ -35,6 +36,7 @@ local world = networking.getChannel('world')
 
 --> Cache
 local item_cache = cache.findCache('items')
+local inventory_cache = cache.findCache('inventory')
 
 local interactable_cache = cache.findCache('interactable')
 local objects_cache = interactable_cache:findTable('objects')
@@ -68,7 +70,7 @@ function item.new(id: string, uuid: string?) : types.Item
     self.uuid = if is_client then uuid else `{id}.{https:GenerateGUID(false)}`
     
     local prompt_object
-    if not objects_cache:hasEntry(id) then
+    if not objects_cache:hasEntry(`item.{id}`) then
         local item_asset = item_cdn:getAsset(id)
         local defs = {
             object_id = `item.{id}`,
@@ -78,19 +80,38 @@ function item.new(id: string, uuid: string?) : types.Item
                 interact_gui = 'basic',
                 interact_bind = { desktop=Enum.KeyCode.E, console=Enum.KeyCode.X},
                 authorized = true,
-                range = 45
+                range = 10 
             },
             instance = {workspace.items, {attributes={['item_id']=id}}},
         }
 
         prompt_object = interactable.newObject(defs)
-        prompt_object:newPrompt{
+    else
+        prompt_object = objects_cache:getValue(`item.{id}`)
+    end
+
+    local pickup_prompt
+    if not prompt_object.prompts.pickup then
+        pickup_prompt = prompt_object:newPrompt{
            prompt_id = 'pickup',
            action = 'Pick Up',
            cooldown = .5,
         }
+        pickup_prompt.triggered:connect(function(self, item: Instance, player: Player)
+            if not is_client then
+                local item_id = item:GetAttribute('item_id') :: string
+
+                local found_item = item_cache:getValue(item.Name) :: types.Item
+                local found_inventory = inventory_cache:getValue(player) :: inventory.Inventory
+
+                found_inventory:insert(found_item)
+                found_item.model:despawn()
+            end
+
+            pickup_prompt:detach(item)
+        end)
     else
-        prompt_object = objects_cache:getValue(id)
+        pickup_prompt = prompt_object.prompts.pickup
     end
     
     if is_client then
@@ -109,8 +130,7 @@ function item.new(id: string, uuid: string?) : types.Item
             :data(self.id, self.uuid)
             :fire()
     end
-
-    prompt_object.prompts.pickup:attachTo(self.model.instance)
+    prompt_object.prompts.pickup:attach(self.model.instance)
 
     item_cache:setValue(self.uuid, self)
     return self

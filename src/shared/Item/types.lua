@@ -35,5 +35,6 @@ export type ModelWrap = typeof(setmetatable({}::self_modelWrap, modelWrap))
 
 function modelWrap.new(uuid: string) : ModelWrap end
 function modelWrap:setTransform(transform: CFrame) end
+function modelWrap:despawn() end
 
 return __
