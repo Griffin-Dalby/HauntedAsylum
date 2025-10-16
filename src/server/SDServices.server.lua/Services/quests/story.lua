@@ -18,3 +18,4 @@
 --]] Variables
 --]] Functions
 --]] Story
+return {}

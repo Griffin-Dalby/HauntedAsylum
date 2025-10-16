@@ -31,3 +31,5 @@ local quests_service = builder.new('quests')
     :start(function(self)
         
     end)
+
+return quests_service
