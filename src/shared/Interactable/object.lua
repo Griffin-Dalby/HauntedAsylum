@@ -108,7 +108,7 @@ function object:newPrompt(opts: types._prompt_options): types.InteractablePrompt
     assert(type(opts.action) == 'string', 
         `"action" option is of type "{type(opts.action)}", it was expected to be a string!`)
     
-    assert(self.prompts[opts.prompt_id]==nil, `{self.object_id} already has a prompt w/ id "{opts.prompt_id}"! Remember, these are to be unique!`)
+    assert(self.prompts[opts.prompt_id]==nil and self.prompts[opts.prompt_id]~='yield', `{self.object_id} already has a prompt w/ id "{opts.prompt_id}"! Remember, these are to be unique!`)
 
     local new_prompt = prompt.new(opts, self.prompt_defs)
     self.prompts[opts.prompt_id] = new_prompt

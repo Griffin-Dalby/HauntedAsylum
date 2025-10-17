@@ -99,31 +99,23 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
         self.interact_gui = builder
 
         --> Authorize
-        if self.prompt_defs.authorized then
+        print(self.prompt_defs)
+        if self.prompt_defs.authorized==true then
             if __debug then print(`[{script.Name}] Attempting to authorize prompt: {self.prompt_defs.object_id}.{self.prompt_id}`) end
 
-            local finished, success = false, false
-            world_channel.interaction:with()
+            local s = world_channel.interaction:with()
                 :intent('auth')
                 :data('prompt', self.prompt_defs.object_id, self.prompt_id)
                 :timeout(3)
-                :invoke()
-                    :andThen(function() success = true end)
-                    :finally(function() finished = true end)
-                    :catch(function(err)
-                        warn(`[{script.Name}] An issue occured while authorizing prompt! ({self.prompt_defs.object_id}.{self.prompt_id})`)
-                        if err[1] then
-                            warn(`[{script.Name}] A message was provided: {err[1]}`)
-                        end
-                    end)
-            repeat task.wait(0) until finished
-            if not success then return end
+                :invoke():wait()
+
+            if not s then return end
             if __debug then print(`[{script.Name}] Successfully authorized prompt: {self.prompt_defs.object_id}.{self.prompt_id}`) end
         end
     end
 
     self.cooldown = opts.cooldown or 0
-    self.authorized = self.prompt_defs.authorized or true
+    self.authorized = if self.prompt_defs.authorized~=nil then self.prompt_defs.authorized else true
 
     self.disabled_clients = {}
     self.enabled = false

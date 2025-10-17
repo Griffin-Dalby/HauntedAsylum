@@ -49,6 +49,8 @@ local item_cdn = cdn.getProvider('item')
 local is_client = runService:IsClient()
 
 --]] Variables
+local yield_create_prompt = false
+
 --]] Functions
 --]] Item Base
 local item = {}
@@ -79,8 +81,7 @@ function item.new(id: string, uuid: string?) : types.Item
             prompt_defs = {
                 interact_gui = 'basic',
                 interact_bind = { desktop=Enum.KeyCode.E, console=Enum.KeyCode.X},
-                authorized = true,
-                range = 10 
+                range = 10
             },
             instance = {workspace.items, {attributes={['item_id']=id}}},
         }
@@ -91,24 +92,26 @@ function item.new(id: string, uuid: string?) : types.Item
     end
 
     local pickup_prompt
-    if not prompt_object.prompts.pickup then
+
+    if yield_create_prompt then
+        repeat task.wait(0) until prompt_object.prompts.pickup end
+    if prompt_object.prompts.pickup==nil then
+        yield_create_prompt = true
         pickup_prompt = prompt_object:newPrompt{
            prompt_id = 'pickup',
            action = 'Pick Up',
            cooldown = .5,
         }
-        pickup_prompt.triggered:connect(function(self, item: Instance, player: Player)
-            if not is_client then
-                local item_id = item:GetAttribute('item_id') :: string
+        pickup_prompt.triggered:connect(function(_self, pitem: Instance, player: Player)
+            pickup_prompt:detach(pitem)
 
-                local found_item = item_cache:getValue(item.Name) :: types.Item
+            if not is_client then
+                local found_item = item_cache:getValue(pitem.Name) :: types.Item
                 local found_inventory = inventory_cache:getValue(player) :: inventory.Inventory
 
                 found_inventory:insert(found_item)
                 found_item.model:despawn()
             end
-
-            pickup_prompt:detach(item)
         end)
     else
         pickup_prompt = prompt_object.prompts.pickup
