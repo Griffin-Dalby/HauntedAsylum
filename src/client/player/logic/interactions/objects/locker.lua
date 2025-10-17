@@ -81,7 +81,8 @@ return function ()
 
         if not r_arm then
             error(`[{script.Name}] Failed to find Right Arm to Open Locker!`)
-            return end
+            return 
+        end
         
         --> Setup arm
         local freeze_anim = Instance.new('Animation')
@@ -100,114 +101,110 @@ return function ()
         local hinge = locker_model.Frame.HingeWall.Hinge :: HingeConstraint
         local handle = locker_model['Door']['Body']['HandleAttachment'] :: Attachment
 
-        r_arm:AddTag('FPV_Visible')
-        r_arm.LocalTransparencyModifier = 0
-        r_arm.Transparency = 0
-
         --> Open door
         locker_model.Door.Body.CanCollide = false
         locker_model.Door.Body.CollisionGroup = 'MovingDoor'
         hinge.TargetAngle = hinge.UpperAngle
 
-        --> Dash to door
-        local target_cf = (handle.WorldCFrame+(handle.WorldCFrame.LookVector*1)+(handle.WorldCFrame.RightVector))*CFrame.Angles(0, math.pi, 0)
-        local distance = (character.PrimaryPart.Position-target_cf.Position).Magnitude
+        --> Calculate target position and orientation
+        -- Position where camera will end up (inside locker)
+        local final_pos = locker.HidingPosition.WorldCFrame.Position + Vector3.new(0, 2, 0)
         
+        -- Calculate locker's forward direction (where you'll be looking when hidden)
+        local locker_forward = locker.HidingPosition.WorldCFrame.LookVector
+        local locker_yaw = math.atan2(-locker_forward.X, -locker_forward.Z)
+        
+        -- Final camera orientation (looking straight ahead into locker)
+        local final_cf = CFrame.new(final_pos) * CFrame.Angles(0, locker_yaw, 0)
+        
+        -- Initial approach target (facing the handle from outside)
+        local handle_look_pos = handle.WorldCFrame.Position
+        local approach_offset = (handle.WorldCFrame.LookVector*2.5) + (handle.WorldCFrame.RightVector*0.5) + (handle.WorldCFrame.UpVector*2)
+        local approach_pos = handle_look_pos + approach_offset
+        local approach_cf = CFrame.new(approach_pos, handle_look_pos)
+
+        --> Setup camera tween
         local cf_val = Instance.new('CFrameValue')
-        cf_val.Value = root.CFrame
+        cf_val.Value = workspace.CurrentCamera.CFrame
 
+        -- Tween goes from approach position to final hiding position
+        -- This creates the "entering" motion
         local enterTween = tweens:Create(cf_val,
-            TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Value = locker.HidingPosition.WorldCFrame+Vector3.new(0,.5,0)})
+            TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut),
+            {Value = final_cf})
+        
+        cf_val:GetPropertyChangedSignal('Value'):Connect(function()
+            workspace.CurrentCamera.CFrame = cf_val.Value
+        end)
 
-        local l1, l2 = arm_upper_length, arm_lower_length
         env_cache:getValue('camera'):setControl(false)
 
         local blur = Instance.new('BlurEffect')
         blur.Size = 0
         blur.Parent = game:GetService('Lighting')
 
-        workspace.CurrentCamera.CameraType = Enum.CameraType.Custom
+        workspace.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+        root.Anchored = true
+
+        local move_speed = 18
+        local close_threshold = 0.95
         local door_reached = false
-        local runtime = runService.RenderStepped:Connect(function()
-            local origin = (torso.CFrame*rs_c0)*CFrame.new(0,0,-rs_c1.X)
-            local target_pos = handle.WorldCFrame.Position
 
-            local localized = origin:PointToObjectSpace(target_pos)
-            local local_unit, l3 = localized.Unit, localized.Magnitude
+        --> Phase 1: Move to approach position (outside door, facing handle)
+        local to_door_runtime
+        to_door_runtime = runService.RenderStepped:Connect(function(dt)
+            if not hide_loaded.IsPlaying and not door_reached then
+                local camPos = workspace.CurrentCamera.CFrame.Position
+                local currDist = (camPos - approach_pos).Magnitude
 
-            local axis = Vector3.new(0, 0, -1):Cross(local_unit)
-            local angle = math.acos(-local_unit.Z)
-            local plane = origin*CFrame.fromAxisAngle(axis, angle)
+                local alpha = math.min(move_speed * dt / math.max(currDist, 0.1), 0.95)
+                workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame:Lerp(approach_cf, alpha)
 
-            local f_plane, f_shoulder_angle, f_elbow_angle
-            if l3<math.max(l2, l1)-math.min(l2, l1) then
-                f_plane = plane*CFrame.new(0,0,math.max(l2,l1)-math.min(l2,l1)-l3)
-                f_shoulder_angle = -math.pi/2
-                f_elbow_angle = math.pi
-            elseif l3>l1+l2 then
-                f_plane = plane
-                f_shoulder_angle = math.pi/2
-                f_elbow_angle = 0
-            else
-                local a1 = -math.acos((-(l2*l2)+(l1*l1)+(l3*l3))/(2*l1*l3))
-                local a2 = math.acos(((l2*l2)-(l1*l1)+(l3*l3))/(2*l2*l3))
-
-                f_plane = plane
-                f_shoulder_angle = a1 + math.pi/2
-                f_elbow_angle = a2 - a1
-            end
-
-            local shoulder_angle, elbow_angle = 
-                CFrame.Angles(f_shoulder_angle, 0, 0),
-                CFrame.Angles(f_elbow_angle, 0, 0)
-
-            local shoulder_cf = f_plane*shoulder_angle*CFrame.new(0, -arm_upper_length*.5, 0)
-            local elbow_cf = shoulder_cf
-                *CFrame.new(0,-arm_upper_length*.5,0)*elbow_angle
-                *CFrame.new(0,-arm_lower_length*.5,0)*CFrame.new(0,(r_arm.Size.Y-arm_lower_length)*.5, 0)
-
-            r_shoulder.C0 = WorldCFrameToC0ObjectSpace(r_shoulder, elbow_cf)
-
-            if hide_loaded.IsPlaying then
-                root.CFrame = cf_val.Value
-                workspace.CurrentCamera.CFrame = workspace.CurrentCamera.CFrame:Lerp(CFrame.lookAt(
-                    workspace.CurrentCamera.CFrame.Position,
-                    workspace.CurrentCamera.CFrame.LookVector
-                ), .115)
-            else
-                root.Anchored = true
-                root.CFrame = root.CFrame:Lerp(target_cf, distance/50)
-                door_reached = (root.CFrame.Position-target_pos).Magnitude<1.65
+                local newDist = (workspace.CurrentCamera.CFrame.Position - approach_pos).Magnitude
+                if newDist <= close_threshold then
+                    door_reached = true
+                end
             end
         end)
 
-        repeat task.wait(0) until door_reached
+        repeat task.wait() until door_reached
+        if to_door_runtime then
+            to_door_runtime:Disconnect()
+            to_door_runtime = nil
+        end
+
+        --> Phase 2: Enter the locker
+        -- Set camera to exact approach position before tweening
+        workspace.CurrentCamera.CFrame = approach_cf
+        cf_val.Value = approach_cf
+        
         enterTween:Play()
-        task.wait(.1)
-        tweens:Create(blur, TweenInfo.new(.075, Enum.EasingStyle.Exponential, Enum.EasingDirection.In),
-            {Size = 20}):Play()
+
+        task.wait(0.15)
+        tweens:Create(blur, TweenInfo.new(.075, Enum.EasingStyle.Exponential, Enum.EasingDirection.In), {Size = 20}):Play()
+
         hide_loaded:Play(0, 2, .8)
-        task.wait(.275)
+
+        task.wait(.15)
         hinge.TargetAngle = hinge.LowerAngle
 
-        local unblur = tweens:Create(blur, TweenInfo.new(.135, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
-            {Size = 0})
+        local unblur = tweens:Create(blur, TweenInfo.new(.135, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = 0})
         unblur:Play()
-        unblur.Completed:Once(function()
-            blur:Destroy()
-        end)
+        unblur.Completed:Once(function() blur:Destroy() end)
 
         enterTween.Completed:Wait()
-        runtime:Disconnect(); runtime = nil
-        r_arm:RemoveTag('FPV_Visible')
+        
+        -- Ensure camera is at exact final position
+        workspace.CurrentCamera.CFrame = final_cf
+        cf_val:Destroy()
 
-        r_shoulder.C0 = rs_c0
+        --> Phase 3: Switch to constrained hiding mode
         freeze_loaded:Stop()
         freeze_loaded:Destroy()
 
+        task.wait(.6)
         env_cache:getValue('movement'):setHiding(true, locker.HidingPosition)
-        
+
     end)
 
 

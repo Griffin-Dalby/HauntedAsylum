@@ -153,8 +153,13 @@ function controller:setHiding(is_hiding: boolean, hide_att: Attachment)
         self.is_jumping = false
 
         camera.CameraType = Enum.CameraType.Custom
+        local base = hide_att.WorldCFrame.Position+Vector3.new(0,2,0)
+
+        local did_x_zero = false
         runService:BindToRenderStep('hide_camera', Enum.RenderPriority.Camera.Value, function()
             local rX, rY, rZ = camera.CFrame:ToOrientation()
+            if did_x_zero==false then
+                rX=0; did_x_zero=true end
 
             local locker_f = hide_att.WorldCFrame.LookVector
             local locker_y_rot = math.atan2(-locker_f.X, -locker_f.Z)
@@ -169,7 +174,7 @@ function controller:setHiding(is_hiding: boolean, hide_att: Attachment)
             local lim_x = math.clamp(math.deg(rX), -30, 30)
             local lim_y = math.clamp(math.deg(rel_y), -45, 45)
             local final_y = locker_y_rot+math.rad(lim_y)
-            camera.CFrame = CFrame.new(hide_att.WorldCFrame.Position+Vector3.new(0, 2, 0))*CFrame.fromOrientation(math.rad(lim_x), final_y, rZ)
+            camera.CFrame = CFrame.new(base)*CFrame.fromOrientation(math.rad(lim_x), final_y, rZ)
         end)
     else
         runService:UnbindFromRenderStep('hide_camera')
