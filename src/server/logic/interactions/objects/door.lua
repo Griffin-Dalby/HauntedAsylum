@@ -22,7 +22,7 @@ return function ()
 
         instance = {workspace.doors, {}},
         prompt_defs = {
-            range = 45
+            range = 10
         }
     }
 

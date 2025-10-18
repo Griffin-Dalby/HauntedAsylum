@@ -117,15 +117,15 @@ function flagger:isClean(): boolean
                 is_clean = false
                 break end
         end
+        if not is_clean then return end
 
         for _, child in pairs(t.children) do
             check_tbl(child)
+            if not is_clean then break end
         end
     end
 
     check_tbl(self)
-    
-
     return is_clean
 end
 

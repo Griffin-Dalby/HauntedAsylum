@@ -97,7 +97,7 @@ function promptUi:render(target: BasePart)
         --> Distance
         local camera_pos = workspace.CurrentCamera.CFrame.Position+workspace.CurrentCamera.CFrame.LookVector
         if l_target_upd > .33 then
-            local max = {math.huge, nil}
+            local max = {self.max_range, nil}
             for _, target in pairs(self.targets) do
                 local dist = (camera_pos-target.Position).Magnitude
                 if dist < max[1] then
@@ -110,6 +110,9 @@ function promptUi:render(target: BasePart)
                 return end
             self.target = max[2]
         end
+        if not self.target then
+            self.root_ui.Visible = false
+            return end
 
         --> Render UI
         local ui_dist = (camera_pos-self.target.Position).Magnitude

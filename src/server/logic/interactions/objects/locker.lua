@@ -9,10 +9,29 @@
 
 --]]
 
+--]] Services
 local replicatedStorage = game:GetService('ReplicatedStorage')
+
+--]] Modules
 local interactable = require(replicatedStorage.Shared.Interactable)
 
-local doors_open = {}
+--]] Sawdust
+local sawdust = require(replicatedStorage.Sawdust)
+
+local networking = sawdust.core.networking
+local cache = sawdust.core.cache
+
+--> Cache
+local players_cache = cache.findCache('players')
+repeat task.wait(0) until players_cache:hasEntry('session')
+
+local session_cache = players_cache:findTable('session')
+
+--]] Settings
+--]] Constants
+--]] Variables
+--]] Functions
+--]] Object
 
 return function ()
     local test_object = interactable.newObject{
@@ -21,7 +40,7 @@ return function ()
 
         instance = {workspace.environment.locker, {}},
         prompt_defs = {
-            range = 45
+            range = 15
         }
     }
 
@@ -31,16 +50,22 @@ return function ()
         cooldown = .5,
     }
     test_prompt.triggered:connect(function(self, locker: Model, player: Player)
+        local player_data = session_cache:getValue(player)
+        if player_data.is_hiding then
+            error(`[{script.Name}] Player {player.Name}.{player.UserId} is already hiding!`)
+            return end
+            
         local character = player.Character
         local humanoid  = character.Humanoid
         local root_part = humanoid.RootPart
-
+        player_data.is_hiding = {locker, root_part.CFrame}
+            
         local locker_model = locker.Parent.Parent :: Model
         local body = locker_model['Door']['Body'] :: Part
 
         body:SetNetworkOwner(player)
-        -- root_part.Anchored = true
-        -- root_part.CFrame = locker.HidingPosition.WorldCFrame
+        root_part.Anchored = true
+        root_part.CFrame = locker.HidingPosition.WorldCFrame
     end)
 
     return test_object
