@@ -128,6 +128,7 @@ function secure.new() : InteractionSecurer
         local player_exists = character~=nil and root_part~=nil --> Character existence check
         player_flagger:setFlag('no_character', not player_exists)
         if __debug then print(`no_character: {not player_exists}`) end
+
         if not player_exists then return end
 
         local root_pos = root_part.Position
@@ -169,15 +170,17 @@ function secure.new() : InteractionSecurer
             end
         end
     end
-    self.runtime.physical = stagger(.33, function(deltaTime)
-        if is_client then
+    if is_client then
+        self.runtime.physical = runService.RenderStepped:Connect(function(deltaTime)
             check_physical(players.LocalPlayer)
-        else
+        end)
+    else
+        self.runtime.physical = stagger(.33, function(deltaTime)
             for _, player: Player in pairs(players:GetPlayers()) do
                 check_physical(player)
             end
-        end
-    end)
+        end)
+    end
 
     --#endregion
 
