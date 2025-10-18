@@ -23,6 +23,7 @@ local cache = sawdust.core.cache
 
 --> Cache
 local movement_cache = cache.findCache('movement')
+local env_cache = cache.findCache('env')
 
 --]] Settings
 local base_speed   = starterPlayer.CharacterWalkSpeed
@@ -101,24 +102,26 @@ function controller.new(env: {}) : MovementController
     --> Runtime
     self.logic = runService.Heartbeat:Connect(function()
         --> Crouching
-        self.can_sprint = not self.is_crouched
-        self.can_jump = not self.is_crouched
+        self.can_sprint = (not self.is_crouched) and not self.is_hiding
+        self.can_jump = (not self.is_crouched) and not self.is_hiding
 
         self.cam_y_off[2] = self.is_crouched and -2 or 0
         self.cam_y_off[1] = lerp(self.cam_y_off[1], self.cam_y_off[2], .25)
 
         env.camera.camera_offset = Vector3.new(0, self.cam_y_off[1], 0)
 
-        --> Move Speed
-        if self.is_sprinting then --> Only sprint when moving
-            self.can_sprint = self.humanoid.MoveDirection.Magnitude > .1
+        if not self.is_hiding then
+            --> Move Speed
+            if self.is_sprinting then --> Only sprint when moving
+                self.can_sprint = self.humanoid.MoveDirection.Magnitude > .1
+            end
+
+            self.speed[2] =
+                self.is_crouched and crouch_speed or ((self.is_sprinting and self.can_sprint) and sprint_speed or base_speed)
+            self.speed[1] = lerp(self.speed[1], self.speed[2], acceleration)
+
+            self.humanoid.WalkSpeed = self.speed[1]
         end
-
-        self.speed[2] =
-            self.is_crouched and crouch_speed or ((self.is_sprinting and self.can_sprint) and sprint_speed or base_speed)
-        self.speed[1] = lerp(self.speed[1], self.speed[2], acceleration)
-
-        self.humanoid.WalkSpeed = self.speed[1]
 
         --> FOV
         self.fov[2] =
@@ -143,17 +146,16 @@ function controller:setSprint(is_sprinting: boolean)
 end
 
 function controller:setHiding(is_hiding: boolean, hide_att: Attachment)
-    self.can_sprint = not is_hiding
-    self.can_crouch = not is_hiding
-    self.can_Jump = not is_hiding
+    self.is_hiding = is_hiding
+
+    self:setSprint(false)
+    self:setCrouch(false)
+    self.is_jumping = false
 
     if is_hiding then
-        self.is_sprinting = false
-        self.is_crouched = false
-        self.is_jumping = false
-
         camera.CameraType = Enum.CameraType.Custom
         local base = hide_att.WorldCFrame.Position+Vector3.new(0,2,0)
+        local camera_c = env_cache:getValue('camera')
 
         local did_x_zero = false
         runService:BindToRenderStep('hide_camera', Enum.RenderPriority.Camera.Value, function()
@@ -174,7 +176,7 @@ function controller:setHiding(is_hiding: boolean, hide_att: Attachment)
             local lim_x = math.clamp(math.deg(rX), -30, 30)
             local lim_y = math.clamp(math.deg(rel_y), -45, 45)
             local final_y = locker_y_rot+math.rad(lim_y)
-            camera.CFrame = CFrame.new(base)*CFrame.fromOrientation(math.rad(lim_x), final_y, rZ)
+            camera.CFrame = CFrame.new(base+camera_c.camera_offset)*CFrame.fromOrientation(math.rad(lim_x), final_y, rZ)
         end)
     else
         runService:UnbindFromRenderStep('hide_camera')

@@ -12,5 +12,7 @@ return {
         tools = { },
         items = { },
         notes = { },
-    }
+    },
+
+    is_hiding = false,
 }

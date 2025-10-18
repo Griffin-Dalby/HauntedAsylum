@@ -33,9 +33,6 @@ local sfx_cdn = cdn.getProvider('sfx')
 
 --> Cache
 local c_env = cache.findCache('env')
-task.delay(5, function()
-    print(cache)
-end)
 
 --]] Settings
 local keybinds = {
