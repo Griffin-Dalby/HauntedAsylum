@@ -30,9 +30,13 @@ local __platform = require(script.platform)
 local sawdust = require(replicatedStorage.Sawdust)
 
 local networking = sawdust.core.networking
+local cache = sawdust.core.cache
 
 -- Networking
 local world_channel = networking.getChannel('world')
+
+-- Caching
+local env_cache = cache.findCache('env')
 
 --]] Settings
 --]] Constants
@@ -69,6 +73,13 @@ local player_flagger = secure.player_flaggers[players.LocalPlayer]
 local enabled_prompts = {}
 local selected_prompt = {0, nil, ''}
 
+--> Catch movement
+local movement_c = {is_hiding=false}
+coroutine.wrap(function()
+    repeat task.wait(0) until env_cache:hasEntry('movement')
+    movement_c = env_cache:getValue('movement')
+end)()
+
 runService.Heartbeat:Connect(function(deltaTime)
     local instance_updates = {}
 
@@ -95,7 +106,7 @@ runService.Heartbeat:Connect(function(deltaTime)
 
     --> Check for disables
     for instance: Instance, prompt in pairs(enabled_prompts) do
-        if instance_updates[instance] then continue end
+        if instance_updates[instance] and not movement_c.is_hiding then continue end
         prompt:disable(instance)
         enabled_prompts[instance] = nil
     end
