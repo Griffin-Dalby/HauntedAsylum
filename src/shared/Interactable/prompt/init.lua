@@ -99,7 +99,6 @@ function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_d
         self.interact_gui = builder
 
         --> Authorize
-        print(self.prompt_defs)
         if self.prompt_defs.authorized==true then
             if __debug then print(`[{script.Name}] Attempting to authorize prompt: {self.prompt_defs.object_id}.{self.prompt_id}`) end
 

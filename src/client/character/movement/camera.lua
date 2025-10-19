@@ -26,6 +26,8 @@ local movement_cache = cache.findCache('movement')
 
 --]] Settings
 local mouse_sensitivity = .4
+local gamepad_sensitivity = 3
+local thumbstick_deadzone = .15
 
 local bob_freq = 4                         --] Bob cycle speed
 
@@ -65,14 +67,55 @@ function camera.init(env: {}) : CameraController
 
     self.camera_offset = Vector3.new(0, 0, 0)
     self.camera_angles = Vector2.new(0, 0)
+    local last_input_type = 'KBM'
     
+    local thumbstick
     self.mouse_capture = userInputs.InputChanged:Connect(function(input, gameProcessedEvent)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Delta
-            self.camera_angles = self.camera_angles + Vector2.new(
-                -delta.Y * mouse_sensitivity,
-                -delta.X * mouse_sensitivity
-            )
+        if gameProcessedEvent then return end
+        if input.UserInputType ~= Enum.UserInputType.MouseMovement then return end
+        last_input_type='KBM'
+
+        local delta = input.Delta
+        self.camera_angles = self.camera_angles + Vector2.new(
+            -delta.Y * mouse_sensitivity,
+            -delta.X * mouse_sensitivity
+        )
+        self.camera_angles = Vector2.new(
+            math.clamp(self.camera_angles.X, -80, 80),
+            self.camera_angles.Y
+        )
+    end)
+
+    self.thumb_capture = runService.RenderStepped:Connect(function(dt)
+        local inputs = userInputs:GetGamepadState(Enum.UserInputType.Gamepad1)
+        if not inputs then return end
+
+        local delta = Vector2.zero
+
+        for _, input in ipairs(inputs) do
+            if input.KeyCode == Enum.KeyCode.Thumbstick2 then
+                delta = input.Position
+                break
+            end
+        end
+
+        local mag = delta.Magnitude
+        if mag < thumbstick_deadzone then
+            delta = Vector2.zero
+        else
+            local scaled = (mag - thumbstick_deadzone) / (1 - thumbstick_deadzone)
+            delta = delta.Unit * scaled
+        end
+
+        if delta.Magnitude > 0 then
+            last_input_type = "Gamepad"
+        end
+
+        if last_input_type == "Gamepad" and delta.Magnitude > 0 then
+            self.camera_angles += Vector2.new(
+                delta.Y * gamepad_sensitivity,
+                -delta.X * gamepad_sensitivity
+            ) * dt * 60
 
             self.camera_angles = Vector2.new(
                 math.clamp(self.camera_angles.X, -80, 80),

@@ -201,12 +201,26 @@ function flashlight.new(player: Player?) : Flashlight
         self.light_part = script.LightPart:Clone()
         self.light_part.Parent = workspace.CurrentCamera
 
-        local mouse_delta = Vector2.zero
+        local last_input_type = "KBM"
         local raw_mouse_delta = Vector2.zero
+        local mouse_delta = Vector2.zero
+
+        local prev_stick = Vector2.zero
 
         self.mouse_connection = userInputs.InputChanged:Connect(function(input)
             if input.UserInputType == Enum.UserInputType.MouseMovement then
                 raw_mouse_delta = Vector2.new(input.Delta.X, input.Delta.Y)
+                last_input_type = "KBM"
+
+            elseif input.UserInputType == Enum.UserInputType.Gamepad1 then
+                if input.KeyCode == Enum.KeyCode.Thumbstick2 then
+                    local stick = Vector2.new(input.Position.X, input.Position.Y)
+                    local delta = stick - prev_stick
+                    prev_stick = stick
+
+                    raw_mouse_delta = delta * 50
+                    last_input_type = "Gamepad"
+                end
             end
         end)
 
@@ -221,14 +235,14 @@ function flashlight.new(player: Player?) : Flashlight
                         12.5*dT )
 
                     local cam_pitch = math.deg(math.asin(-camera.CFrame.LookVector.Y))
-                    local max_pitch = 75
-                    local pitch_fade_zone = 45
+                    local max_pitch, pitch_fade_zone = 75, 45
 
                     local fade_fac = 1
                     if math.abs(cam_pitch) > (max_pitch - pitch_fade_zone) then
                         fade_fac = math.max(0, (max_pitch - math.abs(cam_pitch)) / pitch_fade_zone) end
 
                     local lead_strength = movement_cache:getValue('is_crouched') and 3 or 2.65
+                    
                     local lead_vector = Vector3.new(
                         mouse_delta.X*lead_strength*fade_fac,
                         -mouse_delta.Y*(lead_strength*.6)*fade_fac,
