@@ -237,4 +237,16 @@ function platform.new() : PlatformMap end
 
 --#endregion
 
+--[[ NET EVENT ]]--
+--#region
+local netEvent = {}
+netEvent.__index = netEvent
+
+export type _self_net_event = {}
+export type NetEvent = typeof(setmetatable({} :: _self_net_event, netEvent))
+
+function netEvent.new() : NetEvent end
+
+--#endregion
+
 return types

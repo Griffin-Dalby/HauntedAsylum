@@ -94,7 +94,7 @@ function object.new(opts: types._object_options): types.InteractableObject
 end
 
 --[[ object:newPrompt(opts: PromptOptions) : InteractablePrompt
-    Wraps prompt.new() and integrates prompt with the current object.]]
+    Wraps prompt.new() and integrates prompt with the current object. ]]
 function object:newPrompt(opts: types._prompt_options): types.InteractablePrompt
     assert(opts, `Attempt to create new Interactable Prompt w/o options argument!`)
     assert(type(opts) == 'table',
@@ -114,6 +114,13 @@ function object:newPrompt(opts: types._prompt_options): types.InteractablePrompt
     self.prompts[opts.prompt_id] = new_prompt
     
     return new_prompt
+end
+
+--[[ object:newNetEvent(id: string) : ObjectNetEvent
+    Creates a new "Net Event" which can allow easy communication between
+    server-client while handling a prompt. ]]
+function object:newNetEvent(id: string)
+    
 end
 
 return object
