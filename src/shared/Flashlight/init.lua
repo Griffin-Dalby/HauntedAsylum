@@ -21,6 +21,7 @@ local sawdust = require(replicatedStorage.Sawdust)
 
 local networking = sawdust.core.networking
 local cache = sawdust.core.cache
+local maid = sawdust.util.maid
 local cdn = sawdust.core.cdn
 
 --> Networking
@@ -60,8 +61,32 @@ function flashlightFalloff(value_range: {}, alpha_range: {}, current)
         *math.pow((current-alpha_range[1])/(alpha_range[1]-alpha_range[2]), 4)+value_range[1]
 end
 
-local function getFlicker(intensity)
+function getFlicker(intensity)
     return 1 - intensity * (0.5 + 0.5 * math.noise(os.clock() * 8))
+end
+
+local __cutout_timer = 0
+function getFlickerMulti(power)
+    local flicker_multi = 1
+    if power <= 10 and power >= 0 then
+        if __cutout_timer > 0 then
+            flicker_multi = 0
+            __cutout_timer -= 1
+        elseif math.random() < 0.04 then
+            __cutout_timer = math.random(2, 6)
+            flicker_multi = 0
+        else
+            flicker_multi = getFlicker(.5)
+        end
+    elseif power <= 16 and power > 10 then
+        flicker_multi = getFlicker(.4)*(math.random()<.04 and 1.5 or 1)
+    elseif power <= 22 and power > 16 then
+        flicker_multi = getFlicker(.275)
+    elseif power <= 30 and power > 22 then
+        flicker_multi = getFlicker(.15)
+    end
+
+    return flicker_multi
 end
 
 --]] Flashlight
@@ -69,6 +94,8 @@ local flashlight = {}
 flashlight.__index = flashlight
 
 export type self = {
+    __maid: sawdust.SawdustMaid,
+
     player: Player,
     toggled: boolean,
     power: number,
@@ -83,6 +110,7 @@ export type Flashlight = typeof(setmetatable({} :: self, flashlight))
 
 function flashlight.new(player: Player?) : Flashlight
     local self = setmetatable({} :: self, flashlight)
+    self.__maid = maid.new(self)
 
     self.player = is_client and players.LocalPlayer or player
     local env: {} = is_client and player or nil
@@ -95,7 +123,7 @@ function flashlight.new(player: Player?) : Flashlight
     
     local time_since_update = 0
 
-    self.light_behavior = runService.Heartbeat:Connect(function(dT)
+    self.light_behavior = self.__maid:add(runService.Heartbeat:Connect(function(dT)
         if self.toggled then
             if self.power <= 0 then
                 self.power = 0
@@ -132,26 +160,7 @@ function flashlight.new(player: Player?) : Flashlight
                 local direct_fBright = flashlightFalloff(direct_brightness, charge_range, self.power)
                 local wide_fBright = flashlightFalloff(wide_brightness, charge_range, self.power)
 
-                local flicker_multi = 1
-                if self.power <= 10 and self.power >= 0 then
-                    if not self._cutoutTimer then self._cutoutTimer = 0 end
-                    if self._cutoutTimer > 0 then
-                        flicker_multi = 0
-                        self._cutoutTimer -= 1
-                    elseif math.random() < 0.04 then
-                        self._cutoutTimer = math.random(2, 6)
-                        flicker_multi = 0
-                    else
-                        flicker_multi = getFlicker(.5)
-                    end
-                elseif self.power <= 16 and self.power > 10 then
-                    flicker_multi = getFlicker(.4)*(math.random()<.04 and 1.5 or 1)
-                elseif self.power <= 22 and self.power > 16 then
-                    flicker_multi = getFlicker(.275)
-                elseif self.power <= 30 and self.power > 22 then
-                    flicker_multi = getFlicker(.15)
-                end
-
+                local flicker_multi = getFlickerMulti(self.power)
                 self.light_part.DirectLight.Brightness, self.light_part.WideLight.Brightness = 
                     direct_fBright*flicker_multi, wide_fBright*flicker_multi/2
             end
@@ -189,7 +198,7 @@ function flashlight.new(player: Player?) : Flashlight
                 end)
             end
         end
-    end)
+    end))
 
     if is_client then
         local s = mechanics.flashlight:with()
@@ -198,7 +207,7 @@ function flashlight.new(player: Player?) : Flashlight
             :invoke():wait()
         assert(s, `Server abstains from initalizing our flashlight!`)
 
-        self.light_part = script.LightPart:Clone()
+        self.light_part = self.__maid:add(script.LightPart:Clone())
         self.light_part.Parent = workspace.CurrentCamera
 
         local last_input_type = "KBM"
@@ -207,7 +216,8 @@ function flashlight.new(player: Player?) : Flashlight
 
         local prev_stick = Vector2.zero
 
-        self.mouse_connection = userInputs.InputChanged:Connect(function(input)
+        self.mouse_connection = self.__maid:add(userInputs.InputChanged:Connect(function(input)
+            if not self.player.Character then return end
             if input.UserInputType == Enum.UserInputType.MouseMovement then
                 raw_mouse_delta = Vector2.new(input.Delta.X, input.Delta.Y)
                 last_input_type = "KBM"
@@ -222,9 +232,10 @@ function flashlight.new(player: Player?) : Flashlight
                     last_input_type = "Gamepad"
                 end
             end
-        end)
+        end))
 
-        self.visual_runtime = runService.Heartbeat:Connect(function(dT)
+        self.visual_runtime = self.__maid:add(runService.Heartbeat:Connect(function(dT)
+            if not self.player.Character then return end
             if self.light_part and root_part then
                 self.light_part.DirectLight.Enabled = self.toggled
                 self.light_part.WideLight.Enabled = self.toggled
@@ -290,12 +301,13 @@ function flashlight.new(player: Player?) : Flashlight
                     root_part = character.PrimaryPart
                 end
             end
-        end)
+        end))
     
-        self.update_power = mechanics.flashlight:route():on('update_power', function(req, res)
-            if __debug then print(`[{script.Name}] Synced power to server-time! (diff: {self.power-req.data[1]})`) end
-            self.power = req.data[1]
-        end)
+        self.update_power = self.__maid:add(
+            mechanics.flashlight:route():on('update_power', function(req, res)
+                if __debug then print(`[{script.Name}] Synced power to server-time! (diff: {self.power-req.data[1]})`) end
+                self.power = req.data[1]
+        end))
     end
 
     return self
@@ -330,6 +342,10 @@ function flashlight:toggle(button_pressed: boolean) : boolean
         self.toggled = target_state
         return true
     end
+end
+
+function flashlight:discard()
+    self.__maid:clean()
 end
 
 return flashlight

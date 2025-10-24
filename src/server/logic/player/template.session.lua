@@ -7,7 +7,7 @@
 
 --]]
 
-return {
+local session = {
     inventory = {
         tools = { },
         items = { },
@@ -16,3 +16,6 @@ return {
 
     is_hiding = false,
 }
+
+export type session_template = typeof(session)
+return session

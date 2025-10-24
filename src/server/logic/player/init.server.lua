@@ -20,6 +20,8 @@ local profileStore = require(replicatedStorage.Shared.ProfileStore)
 local saved_template = require(script["template.saved"])
 local session_template = require(script["template.session"])
 
+local flashlight = require(replicatedStorage.Shared.Flashlight)
+
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 
@@ -72,13 +74,34 @@ function loadPlayerData(player: Player)
     end
 end
 
+function handlePlayer(player: Player)--> Connect to death
+    --> Character Hook
+    player.CharacterAdded:Connect(function(character)
+        local humanoid: Humanoid = character:WaitForChild("Humanoid")
+        humanoid.Died:Once(function()
+            local p_session_data = session:getValue(player) :: session_template.session_template
+
+            --> Clear flashlight
+            local p_flashlight: flashlight.Flashlight = p_session_data.flashlight
+            if p_flashlight then
+                p_session_data.flashlight = nil
+                p_flashlight:discard() end
+
+            
+        end)
+    end)
+
+    --> Handle Data
+    loadPlayerData(player)
+    -- local p_persistent_data = persistent:getValue(player)
+end
 
 for _, player in players:GetPlayers() do
     coroutine.wrap(function()
-        loadPlayerData(player)
+        handlePlayer(player)
     end)()
 end
-players.PlayerAdded:Connect(loadPlayerData)
+players.PlayerAdded:Connect(handlePlayer)
 players.PlayerRemoving:Connect(function(player)
     local profile = profiles[player]
     if profile~=nil then
