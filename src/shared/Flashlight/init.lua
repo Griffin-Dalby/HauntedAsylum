@@ -113,7 +113,6 @@ function flashlight.new(player: Player?) : Flashlight
     self.__maid = maid.new(self)
 
     self.player = ((player and typeof(player)=='Instance') and player or players.LocalPlayer)
-    print(self.player)
     local is_local = self.player==players.LocalPlayer
 
     local env: {} = is_client and player or nil
@@ -215,7 +214,7 @@ function flashlight.new(player: Player?) : Flashlight
         if is_local then
             local s = mechanics.flashlight:with()
                 :intent('init')
-                :timeout(5)
+                :timeout(10)
                 :invoke():wait()
             if not s then self:discard() end
             assert(s, `Server abstains from initalizing our flashlight!`)
@@ -321,6 +320,9 @@ function flashlight.new(player: Player?) : Flashlight
         
         else
             self.visual_runtime = self.__maid:add(runService.Heartbeat:Connect(function()
+                self.light_part.DirectLight.Enabled = self.toggled
+                self.light_part.WideLight.Enabled = self.toggled
+
                 self.light_part.CFrame = head.CFrame
             end))
         end
