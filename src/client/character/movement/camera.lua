@@ -142,9 +142,9 @@ function camera.init(env: {}) : CameraController
         if not self.controlling then return end
 
         --> Force FPV
-        player.CameraMaxZoomDistance = 0
-        player.CameraMinZoomDistance = 0
-        player.CameraMode = Enum.CameraMode.LockFirstPerson
+        -- player.CameraMaxZoomDistance = 0
+        -- player.CameraMinZoomDistance = 0
+        -- player.CameraMode = Enum.CameraMode.LockFirstPerson
         self.camera.CameraType = Enum.CameraType.Scriptable
 
         userInputs.MouseIconEnabled = false
