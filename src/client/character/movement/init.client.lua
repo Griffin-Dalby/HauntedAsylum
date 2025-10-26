@@ -17,8 +17,8 @@ local soundService = game:GetService('SoundService')
 local runService = game:GetService('RunService')
 
 --]] Modules
-local camera = require(script.camera)
-local controller = require(script.controller)
+local camera = require(script:WaitForChild('camera'))
+local controller = require(script:WaitForChild('controller'))
 
 local flashlight = require(replicatedStorage.Shared.Flashlight)
 

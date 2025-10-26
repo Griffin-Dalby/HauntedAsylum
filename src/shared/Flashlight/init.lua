@@ -112,11 +112,15 @@ function flashlight.new(player: Player?) : Flashlight
     local self = setmetatable({} :: self, flashlight)
     self.__maid = maid.new(self)
 
-    self.player = is_client and players.LocalPlayer or player
+    self.player = ((player and typeof(player)=='Instance') and player or players.LocalPlayer)
+    print(self.player)
+    local is_local = self.player==players.LocalPlayer
+
     local env: {} = is_client and player or nil
 
     local character = self.player.Character or self.player.CharacterAdded:Wait()
     local root_part = character.PrimaryPart
+    local head = character:WaitForChild('Head')
 
     self.toggled = false
     self.power = 100
@@ -143,13 +147,15 @@ function flashlight.new(player: Player?) : Flashlight
                 end
             else
                 --> UI
-                local flash_bar: Frame = self.player.PlayerGui.UI.Stats.Flashlight
-                if flash_bar:GetAttribute('transparency') then
-                    flash_bar:SetAttribute('transparency', nil) end
-                flash_bar.BackgroundTransparency = .25
-                flash_bar.Bar.BackgroundTransparency = 0
-                flash_bar.Bar.Size =
-                    UDim2.new(self.power/100, 0, 1, 0)
+                if is_local then
+                    local flash_bar: Frame = self.player.PlayerGui.UI.Stats.Flashlight
+                    if flash_bar:GetAttribute('transparency') then
+                        flash_bar:SetAttribute('transparency', nil) end
+                    flash_bar.BackgroundTransparency = .25
+                    flash_bar.Bar.BackgroundTransparency = 0
+                    flash_bar.Bar.Size =
+                        UDim2.new(self.power/100, 0, 1, 0)
+                end
 
                 --> Charge's affect on the light
                 local charge_range = {100, 0}
@@ -165,7 +171,7 @@ function flashlight.new(player: Player?) : Flashlight
                     direct_fBright*flicker_multi, wide_fBright*flicker_multi/2
             end
         else
-            if is_client then
+            if is_local then
                 local flash_bar: Frame = self.player.PlayerGui.UI.Stats.Flashlight
                 if flash_bar:GetAttribute('transparency') then
                     return end
@@ -201,113 +207,123 @@ function flashlight.new(player: Player?) : Flashlight
     end))
 
     if is_client then
-        local s = mechanics.flashlight:with()
-            :intent('init')
-            :timeout(5)
-            :invoke():wait()
-        assert(s, `Server abstains from initalizing our flashlight!`)
+        local light_part = script.LightPart:Clone()
+        self.light_part = self.__maid:add(light_part)
+        self.__maid:tag(light_part, 'light_part')
+        self.light_part.Parent = is_local and workspace.CurrentCamera or head
 
-        self.light_part = self.__maid:add(script.LightPart:Clone())
-        self.light_part.Parent = workspace.CurrentCamera
+        if is_local then
+            local s = mechanics.flashlight:with()
+                :intent('init')
+                :timeout(5)
+                :invoke():wait()
+            if not s then self:discard() end
+            assert(s, `Server abstains from initalizing our flashlight!`)
 
-        local last_input_type = "KBM"
-        local raw_mouse_delta = Vector2.zero
-        local mouse_delta = Vector2.zero
+            local last_input_type = "KBM"
+            local raw_mouse_delta = Vector2.zero
+            local mouse_delta = Vector2.zero
 
-        local prev_stick = Vector2.zero
+            local prev_stick = Vector2.zero
 
-        self.mouse_connection = self.__maid:add(userInputs.InputChanged:Connect(function(input)
-            if not self.player.Character then return end
-            if input.UserInputType == Enum.UserInputType.MouseMovement then
-                raw_mouse_delta = Vector2.new(input.Delta.X, input.Delta.Y)
-                last_input_type = "KBM"
+            self.mouse_connection = self.__maid:add(userInputs.InputChanged:Connect(function(input)
+                if not self.player.Character then return end
+                if input.UserInputType == Enum.UserInputType.MouseMovement then
+                    raw_mouse_delta = Vector2.new(input.Delta.X, input.Delta.Y)
+                    last_input_type = "KBM"
 
-            elseif input.UserInputType == Enum.UserInputType.Gamepad1 then
-                if input.KeyCode == Enum.KeyCode.Thumbstick2 then
-                    local stick = Vector2.new(input.Position.X, input.Position.Y)
-                    local delta = stick - prev_stick
-                    prev_stick = stick
+                elseif input.UserInputType == Enum.UserInputType.Gamepad1 then
+                    if input.KeyCode == Enum.KeyCode.Thumbstick2 then
+                        local stick = Vector2.new(input.Position.X, input.Position.Y)
+                        local delta = stick - prev_stick
+                        prev_stick = stick
 
-                    raw_mouse_delta = delta * 50
-                    last_input_type = "Gamepad"
+                        raw_mouse_delta = delta * 50
+                        last_input_type = "Gamepad"
+                    end
                 end
-            end
-        end))
+            end))
 
-        self.visual_runtime = self.__maid:add(runService.Heartbeat:Connect(function(dT)
-            if not self.player.Character then return end
-            if self.light_part and root_part then
-                self.light_part.DirectLight.Enabled = self.toggled
-                self.light_part.WideLight.Enabled = self.toggled
-                
-                if self.toggled then
-                    mouse_delta = mouse_delta:Lerp(
-                        raw_mouse_delta*.035,
-                        12.5*dT )
-
-                    local cam_pitch = math.deg(math.asin(-camera.CFrame.LookVector.Y))
-                    local max_pitch, pitch_fade_zone = 75, 45
-
-                    local fade_fac = 1
-                    if math.abs(cam_pitch) > (max_pitch - pitch_fade_zone) then
-                        fade_fac = math.max(0, (max_pitch - math.abs(cam_pitch)) / pitch_fade_zone) end
-
-                    local lead_strength = movement_cache:getValue('is_crouched') and 3 or 2.65
+            self.visual_runtime = self.__maid:add(runService.Heartbeat:Connect(function(dT)
+                if not self.player.Character then return end
+                if self.light_part and root_part then
+                    self.light_part.DirectLight.Enabled = self.toggled
+                    self.light_part.WideLight.Enabled = self.toggled
                     
-                    local lead_vector = Vector3.new(
-                        mouse_delta.X*lead_strength*fade_fac,
-                        -mouse_delta.Y*(lead_strength*.6)*fade_fac,
-                        0
-                    )
+                    if self.toggled then
+                        mouse_delta = mouse_delta:Lerp(
+                            raw_mouse_delta*.035,
+                            12.5*dT )
 
-                    local base_dir = camera.CFrame.LookVector
-                    local lead_dir = (base_dir + camera.CFrame:VectorToWorldSpace(lead_vector)).Unit
-                    
-                    local flashlight_offset = Vector3.new(.4, -.2, 0)
+                        local cam_pitch = math.deg(math.asin(-camera.CFrame.LookVector.Y))
+                        local max_pitch, pitch_fade_zone = 75, 45
 
-                    local target_cf  = CFrame.lookAt(
-                        camera.CFrame.Position + camera.CFrame:VectorToWorldSpace(flashlight_offset),
-                        camera.CFrame.Position + lead_dir*5
-                    )
+                        local fade_fac = 1
+                        if math.abs(cam_pitch) > (max_pitch - pitch_fade_zone) then
+                            fade_fac = math.max(0, (max_pitch - math.abs(cam_pitch)) / pitch_fade_zone) end
 
-                    local movement_intensity = mouse_delta.Magnitude
-                    local lerp_speed = math.clamp(6+movement_intensity*8, 4, 18)
+                        local lead_strength = movement_cache:getValue('is_crouched') and 3 or 2.65
+                        
+                        local lead_vector = Vector3.new(
+                            mouse_delta.X*lead_strength*fade_fac,
+                            -mouse_delta.Y*(lead_strength*.6)*fade_fac,
+                            0
+                        )
 
-                    local bob_off = env.camera.bob_offset or Vector3.zero
-                    local is_sprinting = env.movement.is_sprinting or false
-                    local bob_vec = camera.CFrame:VectorToWorldSpace(Vector3.new(
-                        bob_off.X*(is_sprinting and 5 or 15),
-                        bob_off.Y*(is_sprinting and 2.5 or 15),
-                        bob_off.Z*0
-                    ))
-                    self.bob_smooth = self.bob_smooth and self.bob_smooth:Lerp(bob_vec, 10*dT) or bob_vec
+                        local base_dir = camera.CFrame.LookVector
+                        local lead_dir = (base_dir + camera.CFrame:VectorToWorldSpace(lead_vector)).Unit
+                        
+                        local flashlight_offset = Vector3.new(.4, -.2, 0)
 
-                    self.light_part.CFrame = self.light_part.CFrame:Lerp(target_cf, lerp_speed*dT)
-                    self.light_part.CFrame += self.bob_smooth
-                    raw_mouse_delta = raw_mouse_delta*.9
+                        local target_cf  = CFrame.lookAt(
+                            camera.CFrame.Position + camera.CFrame:VectorToWorldSpace(flashlight_offset),
+                            camera.CFrame.Position + lead_dir*5
+                        )
+
+                        local movement_intensity = mouse_delta.Magnitude
+                        local lerp_speed = math.clamp(6+movement_intensity*8, 4, 18)
+
+                        local bob_off = env.camera.bob_offset or Vector3.zero
+                        local is_sprinting = env.movement.is_sprinting or false
+                        local bob_vec = camera.CFrame:VectorToWorldSpace(Vector3.new(
+                            bob_off.X*(is_sprinting and 5 or 15),
+                            bob_off.Y*(is_sprinting and 2.5 or 15),
+                            bob_off.Z*0
+                        ))
+                        self.bob_smooth = self.bob_smooth and self.bob_smooth:Lerp(bob_vec, 10*dT) or bob_vec
+
+                        self.light_part.CFrame = self.light_part.CFrame:Lerp(target_cf, lerp_speed*dT)
+                        self.light_part.CFrame += self.bob_smooth
+                        raw_mouse_delta = raw_mouse_delta*.9
+                    else
+                        -- When flashlight is off, position it near your hand
+                        local hand_offset = Vector3.new(0.3, -0.4, 0.1)
+                        self.light_part.CFrame = self.light_part.CFrame:Lerp(
+                            camera.CFrame + camera.CFrame:VectorToWorldSpace(hand_offset), 
+                            4 * dT
+                        )
+                    end
                 else
-                    -- When flashlight is off, position it near your hand
-                    local hand_offset = Vector3.new(0.3, -0.4, 0.1)
-                    self.light_part.CFrame = self.light_part.CFrame:Lerp(
-                        camera.CFrame + camera.CFrame:VectorToWorldSpace(hand_offset), 
-                        4 * dT
-                    )
-                end
-            else
-                if not root_part then
-                    character = self.player.Character or nil
-                    if not character then return end
+                    if not root_part then
+                        character = self.player.Character or nil
+                        if not character then return end
 
-                    root_part = character.PrimaryPart
+                        root_part = character.PrimaryPart
+                    end
                 end
-            end
-        end))
-    
-        self.update_power = self.__maid:add(
-            mechanics.flashlight:route():on('update_power', function(req, res)
-                if __debug then print(`[{script.Name}] Synced power to server-time! (diff: {self.power-req.data[1]})`) end
-                self.power = req.data[1]
-        end))
+            end))
+        
+            self.update_power = self.__maid:add(
+                mechanics.flashlight:route():on('update_power', function(req, res)
+                    if __debug then print(`[{script.Name}] Synced power to server-time! (diff: {self.power-req.data[1]})`) end
+                    self.power = req.data[1]
+            end))
+        
+        else
+            self.visual_runtime = self.__maid:add(runService.Heartbeat:Connect(function()
+                self.light_part.CFrame = head.CFrame
+            end))
+        end
     end
 
     return self

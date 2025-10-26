@@ -73,6 +73,12 @@ mechanics.flashlight:route()
         if success then
             res.data()
             res.send()
+
+            mechanics.flashlight:with() --> Replicate state to clients
+                :broadcastTo{req.caller}:setFilterType('exclude')
+                :intent('replicate_state')
+                :data(req.caller.UserId, toggle_state)
+                :fire()
         else
             res.reject(p_flashlight.toggled)
         end
