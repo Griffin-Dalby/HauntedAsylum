@@ -29,8 +29,8 @@ local cache = sawdust.core.cache
 
 --> Cache
 local players_cache = cache.findCache('players')
-local persistent = players_cache:createTable('persistent') --> Persistent player data
-local session = players_cache:createTable('session') --> Session-specific player data
+local persistent = players_cache:createTable('persistent', true) --> Persistent player data
+local session = players_cache:createTable('session', true) --> Session-specific player data
 
 --]] Settings
 --]] Constants
