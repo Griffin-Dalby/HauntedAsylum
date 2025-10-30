@@ -31,7 +31,7 @@ local objects_cache = interactable_cache:findTable('objects')
 local world_channel = networking.getChannel('world')
 
 --]] Settings
-local __debug = true
+local __debug = false
 
 --]] Constants
 --]] Variables
