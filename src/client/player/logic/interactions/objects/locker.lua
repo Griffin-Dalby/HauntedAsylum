@@ -207,7 +207,6 @@ return function ()
         input_conn = inputService.InputBegan:Connect(function(key, gp)
             if not table.find({Enum.KeyCode.Space,Enum.KeyCode.ButtonB}, key.KeyCode) then return end
             if gp or key.UserInputState~=Enum.UserInputState.Begin then return end
-            print('exit!')
 
             input_conn:Disconnect()
             input_conn = nil
