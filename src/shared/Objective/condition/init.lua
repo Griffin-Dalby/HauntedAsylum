@@ -27,58 +27,70 @@ local signal = sawdust.core.signal
 --]] Constants
 --]] Variables
 --]] Functions
-function processSettings(condition_settings:types.ConditionSettings)
+function processSettings(condition_settings: types.ConditionSettings, check_condition: (identity: types.ConditionIdentity) -> nil)
     local proc_settings = {
-        __check = condition_settings.check,
+        __desc = condition_settings.desc or '< no description >',
+        __check = check_condition,
     }
     
-    local proxy = newproxy(true)
-    local meta = getmetatable(proxy)
+    -- local proxy = newproxy(true)
+    -- local meta = getmetatable(proxy)
 
-    meta.__index = function(_, key)
-        return proc_settings[key]
-    end
-    meta.__newindex = function(_, key, value)
-        warn(`[{script.Name}] Attempt to index locked table ([{key}]={value})`)
-    end
+    -- meta.__index = function(_, key)
+    --     return proc_settings[key]
+    -- end
+    -- meta.__newindex = function(_, key, value)
+    --     warn(`[{script.Name}] Attempt to index locked table ([{key}]={value})`)
+    -- end
 
-    meta.__metatable = 'locked'
+    -- meta.__metatable = 'locked'
 
-    return proxy
+    -- return proxy
+
+    return proc_settings
 end
 
 --]] Module
 local condition = {}
 condition.__index = condition
 
-function condition.new(condition_settings:types.ConditionSettings):types.Condition
-    util.sanitize.settings_condition(condition_settings)
+function condition.new(condition_settings: types.ConditionSettings, check_condition: (identity: types.ConditionIdentity) -> nil):types.Condition
+    -- util.sanitize.settings_condition(condition_settings)
     
     local self = setmetatable({}::types.self_condition, condition)
 
     --> Initalize
-    self.identity = identity.new(self)
-    self.__env = processSettings(condition_settings)
+    self.__identity = identity.new()
+    self.__env = processSettings(condition_settings, check_condition)
 
     --> Fill Values
-    self.fulfilled = false
+    self.fulfillments = {}
 
     --> Signal
     local emitter = signal.new()
 
-    self.fulfillment = emitter:newSignal()
+    self.fulfillment = emitter:newSignal() --> Conditions can fall in & out of fulfillment
 
     return self
 end
 
-function condition:update()
-    local was_fulfilled = self.fulfilled
-    self.fulfilled = self.__env.__check(self.identity)
+function condition:update(player: Player): boolean
+    local was_fulfilled = self.fulfillments[player]~=nil
 
-    if self.fulfilled~=was_fulfilled then
-        self.fulfillment:fire(self.fulfilled)
-        
+    self.__identity:injectPlayer(player)
+    local is_fulfilled = self.__env.__check(self.__identity)
+
+    if is_fulfilled~=was_fulfilled then
+        self.fulfillment:fire(player, is_fulfilled)
+
+        if is_fulfilled then
+            self.fulfillments[player] = true
+        else self.fulfillments[player] = nil
+        end
     end
+    self.__identity:clearInjections()
+
+    return is_fulfilled
 end
 
 return condition

@@ -1,0 +1,57 @@
+--[[
+
+    Player Condition Checks
+
+    Griffin Dalby
+    2025.10.29
+
+    This module will provide some abstracted checks for the player specifically,
+    providing a robust identity interface.
+
+--]]
+
+--]] Services
+--]] Modules
+--]] Sawdust
+--]] Settings
+--]] Constants
+--]] Variables
+--]] Functions
+--]] Module
+
+--> Define Type
+local _checks = {}
+_checks.__index = _checks
+
+type self = {}
+export type PlayerChecks = typeof(setmetatable({}::self, _checks))
+
+function _checks:inArea(area: Part): boolean end
+
+--> Check Generator (For inheritance)
+return function(identity: {}) : PlayerChecks
+    local _checks_instance = {}
+    setmetatable(_checks_instance, {__index = identity})
+
+    function _checks_instance:inArea(area: Part): boolean
+        local player = self.__player :: Player?
+        if not player then
+            warn(debug.traceback(`[{script.Name}] :inArea() player wasn't injected or is unaccessable!`, 3))
+            return false end
+        if not area then
+            warn(debug.traceback(`[{script.Name}] :inArea() missing area argument!`, 3))
+            return false end
+
+        local character = player.Character; if not character then return false end
+
+        local olapParams = OverlapParams.new()
+        olapParams.FilterType = Enum.RaycastFilterType.Include
+        olapParams.FilterDescendantsInstances = {character}
+
+        local partsInArea = workspace:GetPartsInPart(area, olapParams)
+
+        return player.Character and #partsInArea > 0
+    end
+
+    return _checks_instance
+end

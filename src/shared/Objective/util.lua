@@ -27,8 +27,5 @@ obj_util.sanitize = {}
 obj_util.sanitize.settings_objective = function(conditions: types.ObjectiveSettings)
     
 end
-obj_util.sanitize.settings_condition = function(objectives: types.ConditionSettings)
-    
-end
 
 return obj_util
