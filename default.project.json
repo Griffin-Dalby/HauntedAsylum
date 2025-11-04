@@ -5,7 +5,7 @@
 
     "ReplicatedStorage": {
       "Shared": { "$path": "src/shared" },
-      "Sawdust": { "$path": "Packages/_Index/griffin-dalby_sawdust@1.4.2/sawdust/src/" },
+      "Sawdust": { "$path": "Packages/_Index/griffin-dalby_sawdust@1.4.4/sawdust/src/" },
       "Content": { "$path": "src/content" }
     },
 
