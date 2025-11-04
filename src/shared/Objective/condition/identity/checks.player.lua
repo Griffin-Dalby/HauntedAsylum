@@ -1,3 +1,4 @@
+--!nocheck
 --[[
 
     Player Condition Checks
@@ -30,10 +31,10 @@ function _checks:inArea(area: Part): boolean end
 
 --> Check Generator (For inheritance)
 return function(identity: {}) : PlayerChecks
-    local _checks_instance = {}
-    setmetatable(_checks_instance, {__index = identity})
+    local checks = {}
+    setmetatable(checks, {__index = identity})
 
-    function _checks_instance:inArea(area: Part): boolean
+    function checks:inArea(area: Part): boolean
         local player = self.__player :: Player?
         if not player then
             warn(debug.traceback(`[{script.Name}] :inArea() player wasn't injected or is unaccessable!`, 3))
@@ -53,5 +54,5 @@ return function(identity: {}) : PlayerChecks
         return player.Character and #partsInArea > 0
     end
 
-    return _checks_instance
+    return checks
 end

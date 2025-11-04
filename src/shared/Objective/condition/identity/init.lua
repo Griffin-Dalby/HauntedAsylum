@@ -16,7 +16,7 @@ local types = require(script.Parent.Parent.types)
 
 --]] Sawdust
 --]] Settings
-local debug = false
+local _debug = false
 
 --]] Constants
 --]] Variables
@@ -35,7 +35,7 @@ end
 
 --] Injections
 function identity:injectPlayer(player: Player, override: boolean?)
-    if debug then
+    if _debug then
         print(`[{script.Name}] Injecting Player {player.Name} ({player.UserId})`) end
     
     if self.__player and not override then

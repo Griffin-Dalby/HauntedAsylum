@@ -61,7 +61,6 @@ end
 
 function tester:runTests(conditions: {types.Condition})
     for order: number, condition in pairs(conditions) do
-        print(condition)
         if __debug then
             print(`[{script.Name}] Testing Condition @ {order}`) end
 
