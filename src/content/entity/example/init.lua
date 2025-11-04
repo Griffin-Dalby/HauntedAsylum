@@ -12,7 +12,6 @@
 --]] Services
 local replicatedStorage = game:GetService('ReplicatedStorage')
 local runService = game:GetService('RunService')
-local players = game:GetService('Players')
 
 --]] Modules
 local entity = require(replicatedStorage.Shared.Entity)
@@ -38,24 +37,39 @@ example.behavior = {
     spawn_points = { workspace:WaitForChild('EntitySpawn') },
 
     instantiate = function()
-        local self = entity.new(script.Name)
+        local self: entity.Entity<{test: string}> = entity.new(script.Name, {
+            player = {
+                blacklist = {},
+                filterType = 'exclude',
+                sessionDataFlags = {'is_hiding'}
+            },
+
+            physical = {
+
+            }
+        })
+
 
         --] Define States
         --#region
         self.idle
             :hook('enter', 'c_enter', function(env)
-                print('idle')
-                if is_client then
-                    
-                else
-
-                end
+                
             end)
             :hook('exit', 'c_exit', function(env)
                 
             end)
             :hook('update', 'c_update', function(env)
-                
+                env=self.idle.environment
+                if is_client then
+                    
+                else
+                    local closest = env.shared.senses.player:findPlayersInRadius(15)
+                        :enforceSDF('is_hiding', false)
+                        :closest().player :: Player
+
+                    env.shared.target = (closest~=nil) and closest.Character.PrimaryPart or nil
+                end
             end)
 
         self.chase
@@ -73,31 +87,24 @@ example.behavior = {
             :hook('exit', 'c_exit', function(env)
                 
             end)
+            :hook('update', 'c_update', function(env)
+                env=self.chase.environment
+                if is_client then
+
+                else
+                    if not env.shared.target then return end
+                    local dist = env.shared.senses.physical:getDistance(env.shared.target)
+                    -- local is_hiding = 
+                end
+            end)
 
         --#endregion
 
         return self
     end,
 
-    find_target = function(env: {}, model: Model)
-        local c_target = env.target
-        local is_chasing = c_target~=nil
-
-        local root_part = model.PrimaryPart
-        local player_list = players:GetPlayers()
-        local last_max = {48*(is_chasing and 1 or .5), c_target}
-        for _, player: Player in pairs(player_list) do
-            if not player.Character then continue end
-            local target_root = player.Character.PrimaryPart
-
-            local dist = (target_root.Position-root_part.Position).Magnitude
-            if dist < last_max[1] then
-                last_max = {dist, target_root} end
-        end
-
-        if last_max[2] == nil then
-            return end
-        return last_max[2]
+    find_target = function(env: entity.FSM_Cortex, model: Model)
+        
     end
 }
 
