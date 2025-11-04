@@ -59,8 +59,7 @@ example.behavior = {
             :hook('exit', 'c_exit', function(env)
                 
             end)
-            :hook('update', 'c_update', function(env)
-                env=self.idle.environment
+            :hook('update', 'c_update', function(env: typeof(self.idle.environment))
                 if is_client then
                     
                 else
@@ -87,8 +86,7 @@ example.behavior = {
             :hook('exit', 'c_exit', function(env)
                 
             end)
-            :hook('update', 'c_update', function(env)
-                env=self.chase.environment
+            :hook('update', 'c_update', function(env: typeof(self.idle.environment))
                 if is_client then
 
                 else
