@@ -111,9 +111,23 @@ return function()
         fulfilled = function(is_fulfilled: boolean)
             if is_fulfilled then
                 print('Intro Objectives Completed!')
-                return nil --> No next objective
+                return 'impossible' --> No next objective
             end
         end
+    })
+    
+    intro_objectives[5] = objective.new({
+        id = 'impossible',
+        name = 'Impossible',
+        description = {
+            short = 'Impossible to complete',
+            long = 'A objective that is impossible to finished, used as a debugging final destination.'
+        },
+        conditions = {
+            [1] = condition.new({desc='Exploit this value to true ig'}, function(identity)
+                return false
+            end)
+        }
     })
 
     return intro_objectives

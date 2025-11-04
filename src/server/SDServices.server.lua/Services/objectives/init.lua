@@ -30,17 +30,17 @@ local players_cache = cache.findCache('players')
 local session = players_cache:createTable('session', true)
 
 --]] Settings
+local update_interval = 3/60
+
 --]] Constants
 --]] Variables
---]] Functions
---]] Module
-local update_interval = 3/60
 local elapsed = 0
 
+--]] Functions
+--]] Module
 local objectives_service = builder.new('objectives')
     :loadMeta(script.meta)
     :init(function(self, deps)
-        print(self)
         --> Initalize Chapters
         self.chapter = {
             intro = self.meta.intro(),
