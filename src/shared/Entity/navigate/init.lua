@@ -39,7 +39,7 @@ navigator.__index = navigator
     Constructor function for the navigator system that generates a path
     and the logic to search and walk towards a target based off of the
     entities behaviorial patterns. ]]
-function navigator.new(entity: types.Entity): types.EntityNavigator
+function navigator.new(entity: types.Entity<types.FSM_Cortex>): types.EntityNavigator
     local self = setmetatable({} :: types.self_navigator, navigator)
 
     --] Setup Path
@@ -52,11 +52,11 @@ function navigator.new(entity: types.Entity): types.EntityNavigator
     })
     self.path.Visualize = false
 
-    self.goal_root = nil
+    self.nav_target = nil
 
     local function runPath()
-        if not self.goal_root then return end
-        self.path:Run(self.goal_root)
+        if not self.nav_target then return end
+        self.path:Run(self.nav_target)
     end
     self.path.Blocked:Connect(runPath)
     self.path.WaypointReached:Connect(runPath)
@@ -64,20 +64,13 @@ function navigator.new(entity: types.Entity): types.EntityNavigator
     self.path.Reached:Connect(runPath)
 
     --] Setup Logic
-    local target_update_delta = 2
-    self.targeter = runService.Heartbeat:Connect(function(dT)
-        target_update_delta+=dT
-        if target_update_delta<1 then return end
-        target_update_delta = 0
-
-        local targeted_root: BasePart = entity.asset.behavior.find_target(entity.fsm.environment, self.rig.model)
-        self.goal_root = targeted_root
-    end)
-
-    local last_goal_root = nil
     self.walker = runService.Heartbeat:Connect(function(dT)
-        if (self.goal_root == nil) and (self.path._status ~= 'Idle') then
-            entity.fsm.environment.target = nil
+        local c_target = entity.fsm.environment.target
+        
+        if (self.nav_target ~= nil) --> Target switch to nil
+                and (c_target==nil) 
+                and (self.path._status ~= 'Idle') then
+            self.nav_target = nil
             world_channel.entity:with()
                 :broadcastGlobally()
                 :intent('target')
@@ -87,15 +80,14 @@ function navigator.new(entity: types.Entity): types.EntityNavigator
             self.path:Stop()
         end
 
-        if self.goal_root ~= last_goal_root then
-            entity.fsm.environment.target = self.goal_root
+        if self.nav_target ~= c_target then --> Target switch
             world_channel.entity:with()
                 :broadcastGlobally()
                 :intent('target')
-                :data(entity.id, self.goal_root)
+                :data(entity.id, self.nav_target)
                 :fire()
-                
-            last_goal_root = self.goal_root
+
+            self.nav_target = c_target
             runPath()
         end
     end)

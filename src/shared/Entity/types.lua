@@ -1,3 +1,4 @@
+--!nocheck
 --[[
 
     Entity Object Types
@@ -9,8 +10,12 @@
 
 --]]
 
-local sawdust = game:GetService('ReplicatedStorage').Sawdust
+local replicatedStorage = game:GetService('ReplicatedStorage')
+local sawdust = replicatedStorage.Sawdust
+
+local entity_template = require(replicatedStorage.Content.entity.__entity)
 local fsm_types = require(sawdust.__impl.states.types)
+local sense_types = require(script.Parent.senses.types)
 
 local __ = {}
 
@@ -18,20 +23,21 @@ local __ = {}
 local entity = {}
 entity.__index = entity
 
-export type self_entity = {
-    asset: {},
+export type self_entity<TStEnv> = {
+    asset: entity_template.EntityTemplate,
     id: string,
-    fsm: fsm_types.StateMachine,
+    fsm: fsm_types.StateMachine<FSM_Cortex, TStEnv>,
 
-    idle: fsm_types.SawdustState,
-    patrol: fsm_types.SawdustState,
+    idle: fsm_types.SawdustState<FSM_Cortex, TStEnv>,
+    chase: fsm_types.SawdustState<FSM_Cortex, TStEnv>,
 
     rig: EntityRig,
     nav: EntityNavigator,
 }
-export type Entity = typeof(setmetatable({} :: self_entity, entity))
 
-function entity.new() : Entity end
+export type Entity<TStEnv> = typeof(setmetatable({} :: self_entity<TStEnv>, entity))
+
+function entity.new(id: string, senses: sense_types.SensePackages) end
 function entity:defineAnimation(state: string, animation_id: number) end
 function entity:spawn(spawn_part: BasePart?) end
 
@@ -69,6 +75,7 @@ function animator:defineAnimation(state: string, animation: Animation) end
 
 --[[ ENTITY NAVIGATOR ]]--
 local navigator = {}
+
 navigator.__index = navigator
 
 export type self_navigator = {
@@ -79,5 +86,9 @@ export type self_navigator = {
 export type EntityNavigator = typeof(setmetatable({} :: self_navigator, navigator))
 
 function navigator.new(rig: EntityRig) : EntityNavigator end
+
+export type FSM_Cortex       = { senses: sense_types.EntityCortex, target: BasePart? }
+export type FSM_CortexInject = { environment: FSM_Cortex }
+export type FSM_StateInject = { shared: FSM_Cortex }
 
 return __

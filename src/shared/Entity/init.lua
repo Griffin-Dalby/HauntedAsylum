@@ -16,6 +16,7 @@ local runService = game:GetService('RunService')
 
 --]] Module
 local types = require(script.types)
+local senses, sense_types = require(script.senses), require(script.senses.types)
 local rig = require(script.rig)
 local nav = require(script.navigate)
 
@@ -23,7 +24,7 @@ local nav = require(script.navigate)
 local sawdust = require(replicatedStorage.Sawdust)
 
 local networking = sawdust.core.networking
-local fsm = sawdust.core.states
+local fsm = sawdust.core.states; local fsm_type = require(replicatedStorage.Sawdust.__impl.states.types)
 local cdn = sawdust.core.cdn
 
 --] Networking
@@ -41,13 +42,24 @@ local is_client = runService:IsClient()
 local entity = {}
 entity.__index = entity
 
---[[ entity.new(id: string) : Entity
+--> Forward Exports
+export type FSM_Cortex       = types.FSM_Cortex
+export type FSM_CortexInject = types.FSM_CortexInject
+
+export type Entity<TStEnv> = types.Entity<TStEnv>
+
+--> Functions
+
+--[[ entity.new(id: string, sense_packages: {[string]: {}}) : Entity
     Constructor function for the entity object, which will locate
     the entity's asset data and build behaviors and appearance.
-    This will provide a FSM, rig & animation controller, and
-    a pathfinding / navigation system. ]]
-function entity.new(id: string) : types.Entity
-    local self = setmetatable({} :: types.self_entity, entity)
+    This will provide a FSM, rig & animation controller, a
+    pathfinding / navigation system, with simple "senses".
+    
+    These senses can be disabled or enabled as needed, and you
+    can change settings for each sense. ]]
+function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackages) : Entity<TStEnv>
+    local self = setmetatable({} :: types.self_entity<TStEnv>, entity)
 
     assert(id, `Attempt to create a new entity with a nilset id!`)
     assert(type(id) == 'string', `Type mismatch for Argument 1, a {type(id)} was provided, but a string was expected.`)
@@ -57,10 +69,11 @@ function entity.new(id: string) : types.Entity
     self.asset = entity_provider:getAsset(id)
 
     --] Define States
-    self.fsm = fsm.create()
+    self.fsm = fsm.create() :: fsm_type.StateMachine<FSM_Cortex>
+    senses.hook(self, sense_packages)
 
-    self.idle = self.fsm:state('idle')
-    self.chase = self.fsm:state('chase')
+    self.idle = self.fsm:state('idle')   :: fsm_type.SawdustState<FSM_Cortex, TStEnv>
+    self.chase = self.fsm:state('chase') :: fsm_type.SawdustState<FSM_Cortex, TStEnv>
 
     self.idle:transition('chase'):when(function(env) return env.shared.target~=nil end)
     self.chase:transition('idle'):when(function(env) return env.shared.target==nil end)
@@ -75,6 +88,7 @@ function entity.new(id: string) : types.Entity
             spawns = self.asset.behavior.spawn_points
         }
         self.nav = nav.new(self)
+        self.fsm.environment.senses.injectRig(self.rig)
     else
         --] Replication
         world_channel.entity:route()
