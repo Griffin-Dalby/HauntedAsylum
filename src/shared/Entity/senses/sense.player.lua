@@ -34,6 +34,20 @@ local is_server = runService:IsServer()
 
 --]] Variables
 --]] Functions
+function findPathValue(t: {}, path: string)
+    local split = path:split('.')
+    local iter, iter_count = t, 0
+
+    for _, v in ipairs(split) do
+        iter=iter[v]; if iter==nil then break end
+        iter_count+=1 end --> Iterate through the flag_name
+    if iter==nil then
+        warn(debug.traceback(`findPathValue() iterator hit nil @ {table.concat(split, '.', 1, iter_count)}`))
+        return nil; end
+
+    return iter
+end
+
 --]] Module
 
 --> DAC Functions
@@ -62,7 +76,7 @@ local dac_meta = {
 
         return closest
     end,
-    enforceSDF = function(cortex: EntityCortex, t: {}, flag_name: string, flag_value: any)
+    enforceSDF = function(cortex: EntityCortex, t: {}, flag_name: string, expect_value: any)
         if not cortex.__settings or not cortex.__settings.player then 
             warn(debug.traceback(`DAC:enforceSDF() failed to locate cortex settings!`, 3))
             return end
@@ -76,17 +90,9 @@ local dac_meta = {
                     break; end
 
                 --> Search for flag
-                local split = flag_name:split('.')
-                local iter, iter_count = p_session_data, 0
+                local found_value = findPathValue(p_session_data, flag_name)
 
-                for _, v in ipairs(split) do
-                    iter=iter[v]; if iter==nil then break end
-                    iter_count+=1 end --> Iterate through the flag_name
-                if iter==nil then
-                    warn(debug.traceback(`DAC:enforceSDF() iterator hit nil @ {table.concat(split, '.', 1, iter_count)}`))
-                    continue; end
-
-                if iter~=flag_value then --> Drop
+                if found_value~=expect_value then --> Drop
                     t[p]=nil end
             end
         else
@@ -163,6 +169,39 @@ return function(cortex: sense_types.EntityCortex) : sense_types.PlayerSense
         end
 
         return dac_list
+    end
+
+    function sense:adheresSDF(player: Player, flag_name: string, expect_value: any)
+        --> Sanitize
+        assert(session_cache:hasEntry(player), `Failed to find session data for player {player.Name}.{player.UserId}`)
+        local p_session_data = session_cache:getValue(player)
+        local aware_flags = cortex.__settings.player.sessionDataFlags
+        if not table.find(aware_flags, flag_name) then
+            warn(debug.traceback(`PlayerSense:adheresSDF() provided unscoped flag_name "{flag_name}"! No action taken.`))
+            return; end
+        
+        --> Search for flag
+        local found_value = findPathValue(p_session_data, flag_name)
+        return found_value==expect_value
+    end
+
+    function sense:getPlayerFromRoot(rootPart: BasePart)
+        --> Sanitize & find character
+        assert(rootPart, `[{script.Name}] :getPlayerFromRoot() missing argument 1! (rootPart: BasePart)`)
+        local character = rootPart.Parent :: Model
+        
+        assert(character, `[{script.Name}] :getPlayerFromRoot() provided rootPart is parented to nil!`)
+        if typeof(character) ~= 'Instance'
+        or not character:IsA('Model')
+        or not character:FindFirstChildWhichIsA('Humanoid') then
+            warn(debug.traceback(`[{script.Name}] Provided rootPart ({rootPart:GetFullName()}) doesn't belong to a humanoid character!`))
+            return; end
+
+        --> Find player
+        local player = players:GetPlayerFromCharacter(character)
+        assert(character, `[{script.Name}] :getPlayerFromRoot() failed to find player from character ({character:GetFullName()})`)
+
+        return player
     end
 
     --> TODO: Enforce SDF Functions

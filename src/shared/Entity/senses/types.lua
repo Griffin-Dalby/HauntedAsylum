@@ -84,6 +84,11 @@ function sense_player:findPlayers()
     : {[Player]: Model} end
 function sense_player:findPlayersInRadius(radius: number)
     : {[Player]: number} & DataAugmentController end --> Inject DAC
+
+function sense_player:adheresSDF(player: Player, flag_name: string, expect_value: any)
+    : boolean end
+function sense_player:getPlayerFromRoot(rootPart: BasePart)
+    : Player? end
 -- function sense_player:findPlayersInArea(area: Part)
 --     : {[Player]: Model} end
 
