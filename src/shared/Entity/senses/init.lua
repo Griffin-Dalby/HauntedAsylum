@@ -23,7 +23,8 @@ local sense_types = require(script.types)
 local _debug = false
 
 local sense_packages = {
-    ['player'] = script['sense.player']
+    ['player'] = script:WaitForChild('sense.player'),
+    ['physical'] = script:WaitForChild('sense.physical'),
 }
 
 local sData_flags = {
@@ -67,6 +68,9 @@ local package_verifier = {
         end
 
         --#endregion
+    end,
+    ['physical'] = function(settings: sense_types.SensePhysicalSettings, entity_id: string)
+        local log_tag = `[{entity_id}.package.physical]`
     end
 }
 function verifySettings(settings: sense_types.SensePackages, entity_id: string)

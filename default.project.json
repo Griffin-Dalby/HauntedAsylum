@@ -9,9 +9,7 @@
       "Content": { "$path": "src/content" }
     },
 
-    "ServerScriptService": {
-      "Server": { "$path": "src/server" }
-    },
+    "ServerScriptService": { "$path": "src/server" },
 
     "StarterPlayer": {
       "StarterPlayerScripts": { "$path": "src/client/player" },
