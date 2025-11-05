@@ -47,8 +47,11 @@ example.behavior = {
             physical = {
 
             }
+        }, {
+            ['curiosity'] = {def=.25, lim={min=.1, max=.5}, adj=function()
+                
+            end}
         })
-
 
         --] Define States
         --#region
@@ -86,13 +89,24 @@ example.behavior = {
             :hook('exit', 'c_exit', function(env)
                 
             end)
-            :hook('update', 'c_update', function(env: typeof(self.idle.environment))
+            :hook('update', 'c_update', function(env: typeof(self.chase.environment))
+                local sense_player, sense_physical = unpack{
+                    env.shared.senses.player,
+                    env.shared.senses.physical}
+                
                 if is_client then
 
                 else
                     if not env.shared.target then return end
-                    local dist = env.shared.senses.physical:getDistance(env.shared.target)
-                    -- local is_hiding = 
+                    local t_root = env.shared.target :: BasePart
+                    local dist = sense_physical:getDistance(t_root)
+                    local p = sense_player:getPlayerFromRoot(t_root)
+                    
+                    local is_hiding = sense_player:adheresSDF(p, 'is_hiding', true)
+
+                    if dist > 7.5 and is_hiding then
+                        env.shared.target = nil --> Lost target due to hiding
+                    end
                 end
             end)
 

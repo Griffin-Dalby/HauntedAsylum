@@ -75,7 +75,6 @@ function animator:defineAnimation(state: string, animation: Animation) end
 
 --[[ ENTITY NAVIGATOR ]]--
 local navigator = {}
-
 navigator.__index = navigator
 
 export type self_navigator = {
@@ -87,7 +86,34 @@ export type EntityNavigator = typeof(setmetatable({} :: self_navigator, navigato
 
 function navigator.new(rig: EntityRig) : EntityNavigator end
 
-export type FSM_Cortex       = { senses: sense_types.EntityCortex, target: BasePart? }
+--[[ ENTITY LEARNING & SENSES ]]--
+local learning = {}
+learning.__index = learning
+
+--[[ LearningParameter
+    This table provides the values needed to detail the baseline of a
+    parameter, and the upper/lower limits of knowledge.
+    
+    [parameter]: {default, limits: {min, max}}
+    ['curiosity']: {def=.2, lim={min=.1, max=.85}}
+    
+    These parameters are then parsed in the entities behaviorial charting. ]]
+export type LearningParameter = { 
+    def: number,
+    lim: {min: number, max: number},
+    adj: (...any) -> number }
+export type LearningParameters = {
+    [string]: LearningParameter,
+}
+
+export type self_learning = {
+    parameters: LearningParameters
+}
+export type EntityLearning = typeof(setmetatable({} :: self_learning, learning))
+
+function learning.new() : EntityLearning end
+
+export type FSM_Cortex       = { senses: sense_types.EntityCortex, learn: EntityLearning, target: BasePart? }
 export type FSM_CortexInject = { environment: FSM_Cortex }
 export type FSM_StateInject = { shared: FSM_Cortex }
 

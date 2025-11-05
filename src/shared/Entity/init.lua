@@ -17,6 +17,7 @@ local runService = game:GetService('RunService')
 --]] Module
 local types = require(script.types)
 local senses, sense_types = require(script.senses), require(script.senses.types)
+local learn = require(script.learning)
 local rig = require(script.rig)
 local nav = require(script.navigate)
 
@@ -58,7 +59,7 @@ export type Entity<TStEnv> = types.Entity<TStEnv>
     
     These senses can be disabled or enabled as needed, and you
     can change settings for each sense. ]]
-function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackages) : Entity<TStEnv>
+function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackages, learn_params: types.LearningParameters) : Entity<TStEnv>
     local self = setmetatable({} :: types.self_entity<TStEnv>, entity)
 
     assert(id, `Attempt to create a new entity with a nilset id!`)
@@ -71,6 +72,7 @@ function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackage
     --] Define States
     self.fsm = fsm.create() :: fsm_type.StateMachine<FSM_Cortex>
     senses.hook(self, sense_packages)
+    learn.hook(self, learn_params)
 
     self.idle = self.fsm:state('idle')   :: fsm_type.SawdustState<FSM_Cortex, TStEnv>
     self.chase = self.fsm:state('chase') :: fsm_type.SawdustState<FSM_Cortex, TStEnv>
