@@ -171,7 +171,7 @@ return function(cortex: sense_types.EntityCortex) : sense_types.PlayerSense
         return dac_list
     end
 
-    function sense:adheresSDF(player: Player, flag_name: string, expect_value: any)
+    function sense:adheresSDF(player: Player, flag_name: string, expect_value: any, expect_opposite: boolean?)
         --> Sanitize
         assert(session_cache:hasEntry(player), `Failed to find session data for player {player.Name}.{player.UserId}`)
         local p_session_data = session_cache:getValue(player)
@@ -182,7 +182,7 @@ return function(cortex: sense_types.EntityCortex) : sense_types.PlayerSense
         
         --> Search for flag
         local found_value = findPathValue(p_session_data, flag_name)
-        return found_value==expect_value
+        return if expect_opposite then found_value~=expect_value else found_value==expect_value
     end
 
     function sense:getPlayerFromRoot(rootPart: BasePart)

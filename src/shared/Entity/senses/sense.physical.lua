@@ -30,7 +30,15 @@ return function(cortex: sense_types.EntityCortex) : sense_types.PhysicalSense
 
     --> Simple Spatial Awareness
     function sense:getDiff(point: Vector3) : Vector3
-        assert(cortex.__body, `cortex is missing __body! Please ensure injection of rig.`)
+		assert(cortex.__body, `cortex is missing __body! Please ensure injection of rig.`)
+		if typeof(point) == "Instance" then
+            assert(point.Position, `[{script.Name}] Provided Instance without a position! (Class: {point.ClassName})`)
+            point = point.Position
+        elseif typeof(point) == "Vector3" then
+        else
+            error(`[{script.Name}] Provided invalid point type "{typeof(point)}"!`)
+		end
+		
         local root = cortex.__body.PrimaryPart
         return (root.Position-point)
     end
