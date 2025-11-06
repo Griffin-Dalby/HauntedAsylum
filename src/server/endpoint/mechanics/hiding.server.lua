@@ -24,6 +24,7 @@ local mechanics = networking.getChannel('mechanics')
 
 --> Cache
 local players_cache = cache.findCache('players')
+local session_cache = players_cache:createTable('session', true)
 
 --]] Settings
 --]] Constants
@@ -37,7 +38,7 @@ mechanics.hiding:route()
     :on('exit_locker', function(req, res)
         local player = req.caller
 
-        local session_data = players_cache:findTable('session'):getValue(req.caller)
+        local session_data = session_cache:getValue(req.caller)
         local is_hiding = session_data.is_hiding
         if not is_hiding then
             error(`[{script.Name}] Player {player.Name}.{player.UserId} is already hiding!`)
