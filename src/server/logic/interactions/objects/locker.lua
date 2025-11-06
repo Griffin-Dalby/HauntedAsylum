@@ -34,7 +34,7 @@ local session_cache = players_cache:findTable('session')
 --]] Object
 
 return function ()
-    local test_object = interactable.newObject{
+    local locker_object = interactable.newObject{
         object_id = 'locker',
         object_name = 'Locker',
 
@@ -44,12 +44,12 @@ return function ()
         }
     }
 
-    local test_prompt = test_object:newPrompt{
+    local hide_prompt = locker_object:newPrompt{
         prompt_id = 'hide',
         action = 'Hide',
         cooldown = .5,
     }
-    test_prompt.triggered:connect(function(self, locker: Model, player: Player)
+    hide_prompt.triggered:connect(function(self, locker: Model, player: Player)
         local player_data = session_cache:getValue(player)
         if player_data.is_hiding then
             error(`[{script.Name}] Player {player.Name}.{player.UserId} is already hiding!`)
@@ -68,5 +68,5 @@ return function ()
         root_part.CFrame = locker.HidingPosition.WorldCFrame
     end)
 
-    return test_object
+    return hide_prompt
 end

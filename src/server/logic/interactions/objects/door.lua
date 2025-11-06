@@ -49,7 +49,7 @@ return function ()
         cooldown = .5,
     }
     door_interact.triggered:connect(function(self, door: Part, player: Player)
-        --> Cache
+        --> Replication
         local network_uuid = https:GenerateGUID(false)
         door:SetAttribute('network_id', network_uuid)
         door:SetNetworkOwner(player)
@@ -60,6 +60,7 @@ return function ()
             end
         end)
 
+        --> Caching
         local door_model = door.Parent :: Model
         local door_object: doorBehavior.Door
         if door_cache:hasEntry(door_model) then
