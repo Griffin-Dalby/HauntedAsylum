@@ -17,7 +17,7 @@ local runService = game:GetService('RunService')
 --]] Module
 local types = require(script.types)
 local senses, sense_types = require(script.senses), require(script.senses.types)
-local learn = require(script.learning)
+local learn, learn_types = require(script.learning), require(script.learning.types)
 local rig = require(script.rig)
 local nav = require(script.navigate)
 
@@ -59,7 +59,7 @@ export type Entity<TStEnv> = types.Entity<TStEnv>
     
     These senses can be disabled or enabled as needed, and you
     can change settings for each sense. ]]
-function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackages, learn_params: types.LearningParameters) : Entity<TStEnv>
+function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackages, learn_params: {[string]: learn_types.ParameterData}) : Entity<TStEnv>
     local self = setmetatable({} :: types.self_entity<TStEnv>, entity)
 
     assert(id, `Attempt to create a new entity with a nilset id!`)
@@ -76,10 +76,7 @@ function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackage
 
     self.idle = self.fsm:state('idle')   :: fsm_type.SawdustState<FSM_Cortex, TStEnv>
     self.chase = self.fsm:state('chase') :: fsm_type.SawdustState<FSM_Cortex, TStEnv>
-
-    self.idle:transition('chase'):when(function(env) return env.shared.target~=nil end)
-    self.chase:transition('idle'):when(function(env) return env.shared.target==nil end)
-
+    
     self.fsm:switchState('idle')
 
     if not is_client then
