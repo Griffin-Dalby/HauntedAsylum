@@ -1,3 +1,4 @@
+--!nocheck
 --[[
 
     Interactable Object Types
@@ -26,8 +27,8 @@ export type _prompt_defs = {
 
     instance: {Instance}?, --] Custom instance target for specific prompt
     range: number,         --] Minimum distance you must be to activate
-    raycast: boolean,      --] If true, the object instance must be in sight to interact.
-    authorized: boolean,   --] If true, the client will contact the server to verify/parse interaction.
+    raycast: boolean?,     --] If true, the object instance must be in sight to interact.
+    authorized: boolean?,  --] If true, the client will contact the server to verify/parse interaction.
 
     hold_time: number?,    --] How long the bind must be held to activate, or 0 for tap.
 }
