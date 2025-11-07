@@ -19,6 +19,8 @@ local state_types = require(replicatedStorage.Sawdust.__impl.states.types)
 
 --]] Sawdust
 --]] Settings
+local perception_distance = 15
+
 --]] Constants
 local is_client = runService:IsClient()
 
@@ -50,9 +52,35 @@ example.behavior = {
 
             }
         }, {    --] Behavior Parameters
+            --// TODO: Add more behavior weights & actions to call on them, adjust weights.
+            
+            --] Mental
             ['curiosity'] = {def=.25, lim={min=.1, max=.5}, weights={
-                lost_sight = '+.025',
-            }}
+                found_target = '-.025',
+                lost_target = '+.03',
+
+                -- heard_noise = '+.03'
+            }}, --> curiosity: Entity slows down and checks out hotspots, or events.
+            ['awareness'] = {def=.1, lim={min=.1, max=.75}, weights={
+                found_target = '-.035',
+                lost_target = '+.0225',
+
+                -- heard_noise = '+.02'
+            }}, --> awareness: Entity is more aware of events and players.
+            
+            --] Emotional
+            ['patience'] = {def=.35, lim={min=.1, max=.65}, weights={
+                found_target = '+.05',
+                lost_target = '-.055',
+
+                -- heard_noise = '-.025'
+            }}, --> patience: Entity is careful & focused about what they're doing.
+            ['stress'] = {def=.05, lim={min=.05, max=1}, weights={
+                found_target = '-.035',
+                lost_target = "+.045",
+
+                -- heard_noise = '+.03'
+            }}, --> stress: Entity is more ruthless & agressive
         }) :: entity.Entity<{}> & {
             patrol: state_types.SawdustState<entity.FSM_Cortex, {}>
         }
@@ -73,12 +101,14 @@ example.behavior = {
                 if is_client then
                     
                 else
-                    local closest = env.shared.senses.player:findPlayersInRadius(15)
+                    local closest = env.shared.senses.player:findPlayersInRadius(perception_distance)
                         .enforceSDF('is_hiding', false)
                         .closest().player :: Player
 
                     env.shared.target = (closest~=nil) and closest.Character.PrimaryPart or nil
-                    
+                    -- if env.shared.target~=nil then
+                    --     self.fsm:switchState('chase')
+                    -- end
                 end
             end)
         self.idle:transition('chase'):when(function(env)
@@ -86,14 +116,14 @@ example.behavior = {
 
         self.chase
             :hook('enter', 'c_enter', function(env)
-                print('in chase')
+                
                 if is_client then
                     -- local c_target =
                     -- local c_target_p = players:GetPlayerFromCharacter(c_target.Parent)
                     -- if c_target_p~=players.LocalPlayer then return end
                     
                 else
-
+                    env.shared.learn:process('found_target')
                 end
             end)
             :hook('exit', 'c_exit', function(env)
@@ -113,13 +143,15 @@ example.behavior = {
                     local p = sense_player:getPlayerFromRoot(t_root)
                     
                     local is_hiding = sense_player:adheresSDF(p, 'is_hiding', false, true) --> 'is_hiding' ~= false
+                    local can_see = sense_player:canSee(p) --//TODO: Implement this (w/ raycast)
 
-                    if dist <= 7.5 and is_hiding then
-                        env.shared.target = nil --> Lost target due to hiding
-                        env.shared.learn:process('lost_sight')
-                        self.fsm:switchState('patrol')
-                    elseif dist > 7.5 and is_hiding then
-                        
+                    local track_distance = (perception_distance/2)
+                        * (.65+env.shared.learn:getParam('awareness'))
+
+                    if not can_see then --//TODO: Flesh out entity tree
+                        --> Entity cannot currently see player
+                        local out_of_track = dist>track_distance
+
                     end
                 end
             end)
@@ -130,15 +162,33 @@ example.behavior = {
 
         --> Entity States
         --#region
-        self.patrol = self.fsm:state('patrol')
+
+        self.patrol = self.fsm:state('patrol') --//TODO: Patrol wandering behavior
             :hook('enter', 'c_enter', function(env: typeof(self.patrol.environment))
-                print('in patrol')
+                --> Choose best fits
+                
+            end)
+
+        self.patrol_investigate = self.fsm:state('patrol_investigate') --//TODO: Patrol Investigation behavior
+            :hook('enter', 'c_enter', function(env)
+            
             end)
             :hook('exit', 'c_exit', function(env)
                 
             end)
-            :hook('update', 'c_update', function(env: typeof(self.patrol.environment))
+            :hook('update', 'c_update', function(env)
+            
+            end)
+
+        self.patrol_search = self.fsm:state('patrol_search')
+            :hook('enter', 'c_enter', function(env)
+            
+            end)
+            :hook('exit', 'c_exit', function(env)
                 
+            end)
+            :hook('update', 'c_update', function(env)
+            
             end)
 
         --#endregion
