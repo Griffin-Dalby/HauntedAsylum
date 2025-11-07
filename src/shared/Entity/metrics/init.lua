@@ -12,16 +12,16 @@
 
 --]] Services
 local replicatedStorage = game:GetService('ReplicatedStorage')
+local replicatedFirst = game:GetService('ReplicatedFirst')
+local runService = game:GetService('RunService')
 
 --]] Modules
 local learn_types = require(script.Parent.learning.types)
 local entity_types = require(script.Parent.types)
 
 --]] Sawdust
-
-
 --]] Settings
-local metrics_enabled = true
+local metrics_enabled = runService:IsStudio() and replicatedFirst.__tools.brainview.enabled.value
 
 --]] Constants
 --]] Variables
