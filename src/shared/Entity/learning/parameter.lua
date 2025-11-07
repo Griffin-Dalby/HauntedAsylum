@@ -89,7 +89,7 @@ function parameter:process(event_id: string)
         local processed = processNumber(self.value, weight)
         if not processed then return end
 
-        self.value = processed
+        self.value = math.clamp(processed, self.limit.min, self.limit.max)
         if __debug then
             print(`[{script.Name}({self.id})] Processed event "{event_id}" ({self.value}\{{weight}})`)
         end
