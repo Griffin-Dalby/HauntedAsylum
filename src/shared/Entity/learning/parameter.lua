@@ -16,7 +16,7 @@ local learn_types = require(script.Parent.types)
 
 --]] Sawdust
 --]] Settings
-local __debug = true
+local __debug = false
 
 --]] Constants
 --]] Variables
@@ -25,6 +25,10 @@ function processNumber(n: number, weight: string)
     local op = weight:sub(1,1)
     local num = tonumber(weight:sub(2))
     assert(num, `Failed to convert weight string to number! (Parsing: {num})`)
+    
+    --> Apply some noise
+    local noise = (math.random()-.5)--*.1
+    num *= 1+noise
 
     if op=="+" then
         return n+num
@@ -58,7 +62,7 @@ function verifyData(data: learn_types.ParameterData)
 
     --> Bounds
     assert(data.lim.min < data.lim.max, `Minimum Limit is a higher number than Maximum Limit! ({data.lim.min} > {data.lim.max})`)
-    assert(data.def > data.lim.min and data.def < data.lim.max, `Default Weight ({data.def}) is outside of bounds! ({data.lim.min}-{data.lim.max})`)
+    assert(data.def > data.lim.min or data.def < data.lim.max, `Default Weight ({data.def}) is outside of bounds! ({data.lim.min}-{data.lim.max})`)
 end
 
 --]] Module
