@@ -30,6 +30,7 @@ learning.__index = learning
 function learning.hook(entity: entity_types.Entity<{}>, parameters: {[string]: learn_types.ParameterData}) 
         : learn_types.LearningModel
     local self = setmetatable({} :: learn_types.self_model, learning)
+    self.__metrics = entity.fsm.environment['metrics']
 
     --> Initalize Parameters
     local init_params = {}
@@ -46,6 +47,8 @@ function learning:process(event_id: string)
     for _, param: learn_types.LearningParameter in pairs(self.parameters) do
         param:process(event_id)
     end
+
+    self.__metrics:parseParameterUpdate(self.parameters)
 end
 
 return learning

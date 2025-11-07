@@ -16,8 +16,11 @@ local runService = game:GetService('RunService')
 
 --]] Module
 local types = require(script.types)
+
 local senses, sense_types = require(script.senses), require(script.senses.types)
 local learn, learn_types = require(script.learning), require(script.learning.types)
+local metrics = require(script.metrics)
+
 local rig = require(script.rig)
 local nav = require(script.navigate)
 
@@ -25,11 +28,15 @@ local nav = require(script.navigate)
 local sawdust = require(replicatedStorage.Sawdust)
 
 local networking = sawdust.core.networking
+local cache = sawdust.core.cache
 local fsm = sawdust.core.states; local fsm_type = require(replicatedStorage.Sawdust.__impl.states.types)
 local cdn = sawdust.core.cdn
 
 --] Networking
 local world_channel = networking.getChannel('world')
+
+--] Cache
+-- local entity_cache = cache.findCache('entities')
 
 --] CDN
 local entity_provider = cdn.getProvider('entity')
@@ -64,6 +71,7 @@ function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackage
 
     assert(id, `Attempt to create a new entity with a nilset id!`)
     assert(type(id) == 'string', `Type mismatch for Argument 1, a {type(id)} was provided, but a string was expected.`)
+    -- assert(not entity_cache:hasEntry(id), `Entity w/ ID "{id}" already exists! ID must be unique.`)
     self.id = id
 
     assert(entity_provider:hasAsset(id), `Failed to find metadata for entity w/ provided id "{id}"`)
@@ -71,6 +79,7 @@ function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackage
 
     --] Define States
     self.fsm = fsm.create() :: fsm_type.StateMachine<FSM_Cortex>
+    metrics.hook(self)
     senses.hook(self, sense_packages)
     learn.hook(self, learn_params)
 
@@ -96,6 +105,7 @@ function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackage
                 self.fsm.environment.target = req.data[2] end)
     end
 
+    -- entity_cache:setValue(id, self)
     return self
 end
 

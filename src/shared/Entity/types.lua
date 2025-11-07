@@ -87,7 +87,27 @@ export type EntityNavigator = typeof(setmetatable({} :: self_navigator, navigato
 
 function navigator.new(rig: EntityRig) : EntityNavigator end
 
-export type FSM_Cortex       = { senses: sense_types.EntityCortex, learn: learn_types.LearningModel, target: BasePart? }
+--[[ ENTITY METRICS ]]--
+local metrics = {}
+metrics.__index = metrics
+
+export type self_metrics = {
+    parameter: {
+        [number]: { [string]: number, } --> Track value of each parameter
+    }
+}
+export type EntityMetrics = typeof(setmetatable({} :: self_metrics, metrics))
+
+function metrics:parseParameterUpdate(parameters: { [string]: learn_types.LearningParameter })
+    end
+
+--[[ FSM INJECTION ]]--
+export type FSM_Cortex       = { 
+    senses: sense_types.EntityCortex, 
+    learn: learn_types.LearningModel, 
+    metrics: EntityMetrics,
+    
+    target: BasePart? }
 export type FSM_CortexInject = { environment: FSM_Cortex }
 export type FSM_StateInject = { shared: FSM_Cortex }
 
