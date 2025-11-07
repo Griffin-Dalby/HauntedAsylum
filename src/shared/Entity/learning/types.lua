@@ -25,6 +25,8 @@ export type self_model = {
 export type LearningModel = typeof(setmetatable({} :: self_model, model))
 
 function model:process(event_id: string) end
+function model:getParam(parameter_name: string)
+    : LearningParameter end
 
 --[[ PARAMETER ]]--
 --[[ This section covers the parameter object, which allows dynamic

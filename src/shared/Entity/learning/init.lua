@@ -51,4 +51,14 @@ function learning:process(event_id: string)
     self.__metrics:parseParameterUpdate(self.parameters)
 end
 
+function learning:getParam(parameter_name: string)
+    assert(parameter_name, `Argument #1 "parameter_name" was not provided!`)
+    assert(type(parameter_name)=='string', `Argument #1 "parameter_name" is of type "{type(parameter_name)}"! (expected string)`)
+
+    local found_param = self.parameters[parameter_name] :: learn_types.LearningParameter
+    assert(found_param, `Failed to find parameter w/ name "{parameter_name}"!`)
+
+    return found_param
+end
+
 return learning
