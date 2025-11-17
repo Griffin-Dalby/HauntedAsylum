@@ -23,9 +23,13 @@ local cache = sawdust.core.cache
 local env_cache = cache.findCache('env')
 
 --]] Settings
-local asymap = ServerStorage:WaitForChild("asylum.map")
+local KEY_FORMAT_FLOOR_FOLDER = "%s-%s"
+local KEY_FORMAT_FLOOR_FOLDER_ROOM = "%s-%s#%s"
+local KEY_FORMAT_FLOOR_ROOM = "%s-%s"
 
 --]] Constants
+local asymap = ServerStorage:WaitForChild("asylum.map")
+
 --]] Variables
 --]] Functions
 local function generateMappings() : {[string]: Part|Folder}
@@ -43,20 +47,21 @@ local function generateMappings() : {[string]: Part|Folder}
         mappings[id] = floor
         for _, child: Instance in floor:GetChildren() do
             if child:IsA('Folder') then
-                local f_key = ("%s-%s"):format(id, child.Name)
-                assert(not mappings[f_key], `Collision detected while mapping asylum! ({f_key} already exists)`)
+                local f_key = (KEY_FORMAT_FLOOR_FOLDER):format(id, child.Name)
+                assert(not mappings[f_key], `Collision detected while mapping asylum! (F-F "{f_key}" already exists)`)
 
                 mappings[f_key] = child
 
                 for _, part: Instance in child:GetChildren() do
                     if not part:IsA('Part') then continue end
 
-                    local key = ("%s-%s#%s"):format(id, child.Name, part.Name)
+                    local key = (KEY_FORMAT_FLOOR_FOLDER_ROOM):format(id, child.Name, part.Name)
+                    assert(not mappings[key], `Collision detected while mapping asylum! (F-F-R "{key}" already exists)`)
                     mappings[key] = part
                 end
             elseif child:IsA('Part') then
-                local key = ("%s-%s"):format(id, child.Name)
-                assert(not mappings[key], `Collision detected while mapping asylum! ({key} already exists)`)
+                local key = (KEY_FORMAT_FLOOR_ROOM):format(id, child.Name)
+                assert(not mappings[key], `Collision detected while mapping asylum! (F-R "{key}" already exists)`)
 
                 mappings[key] = child
             end
@@ -88,14 +93,14 @@ function mapper.new(): Mapper
     return self :: Mapper
 end
 
-function mapper:fetch(id: string): Part?
+function mapper:fetch(id: string): (Part|Folder)?
     return self.mappings[id] end
 
 function mapper:getFloor(floorId: number): Part?
     return self:fetch(tostring(floorId)) end
 
 function mapper:getRoom(floorId: number, roomId: string, specify: string?): Part?
-    local key = specify and ("%d-%s#%s"):format(floorId, roomId, specify) or ("%d-%s"):format(floorId, roomId)
+    local key = specify and (KEY_FORMAT_FLOOR_FOLDER_ROOM):format(floorId, roomId, specify) or (KEY_FORMAT_FLOOR_ROOM):format(floorId, roomId)
     return self:fetch(key) end
 
 return mapper
