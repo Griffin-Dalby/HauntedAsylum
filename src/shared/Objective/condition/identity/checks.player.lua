@@ -34,11 +34,16 @@ return function(identity: {}) : PlayerChecks
     local checks = {}
     setmetatable(checks, {__index = identity})
 
-    function checks:inArea(area: Part): boolean
+    function checks:_verify_injections()
         local player = self.__player :: Player?
-        if not player then
-            warn(debug.traceback(`[{script.Name}] :inArea() player wasn't injected or is unaccessable!`, 3))
-            return false end
+        assert(player, `[{script.Name}] PlayerChecks missing player injection!`)
+
+        return player
+    end
+
+    function checks:inArea(area: Part): boolean
+        local player = self:_verify_injections()
+        
         if not area then
             warn(debug.traceback(`[{script.Name}] :inArea() missing area argument!`, 3))
             return false end

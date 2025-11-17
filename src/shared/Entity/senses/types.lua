@@ -112,4 +112,16 @@ function sense_physical:getDiff(point: Vector3) : Vector3 end
 function sense_physical:getDistance(point: Vector3) : number end
 function sense_physical:getDirection(point: Vector3) : Vector3 end
 
+--[[ ENVIRONMENT ]]--
+--[[ This section covers the entity's environmental senses, which
+    allow them to understand and interact with their surroundings
+    easier. ]]
+local sense_environment = {}
+sense_environment.__index = sense_environment
+
+export type self_sense_environment = {
+
+}
+export type EnvironmentSense = typeof(setmetatable({} :: self_sense_environment, sense_environment))
+
 return types

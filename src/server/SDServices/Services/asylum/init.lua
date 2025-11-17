@@ -1,26 +1,23 @@
 --[[
 
-    Asylum Mapper
+    Asylum Service
 
     Griffin Dalby
-    2025.11.16
+    2025.11.17
 
-    This module provides an interface for the asylum mapper.
+    This service will manage player asylum data, mapping zones to the asylum.
 
 --]]
 
 --]] Services
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local ServerStorage = game:GetService('ServerStorage')
 
 --]] Modules
 --]] Sawdust
 local sawdust = require(ReplicatedStorage.Sawdust)
 
-local cache = sawdust.core.cache
-
---> Cache
-local env_cache = cache.findCache('env')
+local builder = sawdust.builder
 
 --]] Settings
 local KEY_FORMAT_FLOOR_FOLDER = "%s-%s"
@@ -36,7 +33,7 @@ local function generateMappings() : {[string]: Part|Folder}
     local mappings: {[string]: Part|Folder} = {}
 
     for _, floor: Part in asymap:GetChildren() do
-        if not floor:IsA("Part") then continue end 
+        if not floor:IsA("Part") then continue end
 
         local split = floor.Name:split('_')
         if #split < 2 then 
@@ -71,36 +68,20 @@ local function generateMappings() : {[string]: Part|Folder}
     return mappings
 end
 
---]] Module
-local mapper = {}
-mapper.__index = mapper
+--]] Service
+return builder.new('asylum')
+    :init(function(self, deps)
+        self.mappings = generateMappings()
+    end)
 
-type self = {
-    mappings: {[string]: Part|Folder}
-}
-export type Mapper = typeof(setmetatable({} :: self, mapper))
+    :method('fetch', function(self, id: string): (Part|Folder)?
+        return self.mappings[id] end)
+    :method('getFloor', function(self, floorId: number): Part?
+        return self:fetch(tostring(floorId)) end)
+    :method('getRoom', function(self, floorId: number, roomId: string, specify: string?): Part?
+        local key = specify and (KEY_FORMAT_FLOOR_FOLDER_ROOM):format(floorId, roomId, specify) or (KEY_FORMAT_FLOOR_ROOM):format(floorId, roomId)
+        return self:fetch(key) end)
 
-function mapper.new(): Mapper
-    if env_cache:hasEntry('asylum.map') then
-        return env_cache:getEntry('asylum.map') :: Mapper
-    end
-
-    local self = setmetatable({} :: self, mapper)
-
-    self.mappings = generateMappings()
-    env_cache:setEntry('asylum.map', self)
-
-    return self :: Mapper
-end
-
-function mapper:fetch(id: string): (Part|Folder)?
-    return self.mappings[id] end
-
-function mapper:getFloor(floorId: number): Part?
-    return self:fetch(tostring(floorId)) end
-
-function mapper:getRoom(floorId: number, roomId: string, specify: string?): Part?
-    local key = specify and (KEY_FORMAT_FLOOR_FOLDER_ROOM):format(floorId, roomId, specify) or (KEY_FORMAT_FLOOR_ROOM):format(floorId, roomId)
-    return self:fetch(key) end
-
-return mapper
+    :start(function(self)
+        
+    end)
