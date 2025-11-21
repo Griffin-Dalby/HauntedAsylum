@@ -28,8 +28,12 @@ local builder = sawdust.builder
 local entity_service = builder.new('entities')
     :loadMeta(script.meta)
     :init(function(self, deps)
+    end)
+
+    :start(function(self)
         --> Initalize Entities
-        for _, generator in pairs(self.meta) do
+        for i, generator in pairs(script.meta:GetChildren()) do
+            generator = require(generator)
             local _gen_entity = generator()
         end
     end)

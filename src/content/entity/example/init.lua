@@ -37,7 +37,7 @@ example.appearance = {
 }
 
 example.behavior = {
-    spawn_points = { workspace:WaitForChild('EntitySpawn') },
+    spawn_points = { workspace:WaitForChild('EntitySpawn', 25) },
 
     instantiate = function()
         local self = entity.new(script.Name, 
