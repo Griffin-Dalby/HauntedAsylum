@@ -1,6 +1,5 @@
 --[[
 
-<<<<<<< HEAD
     Asylum SDService
 
     Griffin Dalby
@@ -9,20 +8,14 @@
     This module will provide a SDService while will control the Asylum;
     it's behavior, timings, and other things like tracking which 
     room / floor any given player is on.
-=======
-    Asylum Service
-
-    Griffin Dalby
-    2025.11.17
-
-    This service will manage player asylum data, mapping zones to the asylum.
->>>>>>> 55088a78bea3eacf424e9ae1b0d253b5e14779e1
 
 --]]
 
 --]] Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local ServerStorage = game:GetService('ServerStorage')
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
 --]] Modules
 --]] Sawdust
@@ -36,7 +29,7 @@ local KEY_FORMAT_FLOOR_FOLDER_ROOM = "%s-%s#%s"
 local KEY_FORMAT_FLOOR_ROOM = "%s-%s"
 
 --]] Constants
-local asymap = ServerStorage:WaitForChild("asylum.map")
+local asymap = workspace:WaitForChild("asylum.map")
 
 --]] Variables
 --]] Functions
@@ -48,7 +41,7 @@ local function generateMappings() : {[string]: Part|Folder}
 
         local split = floor.Name:split('_')
         if #split < 2 then 
-            warn(("Floor %s has invalid name format, expected '$prefix_$id'"):format(floor.Name))
+            warn(`Floor {floor.Name} has invalid name format, expected '$prefix_$id'`)
             continue end
 
         local id: string = tostring(split[2])
@@ -80,19 +73,200 @@ local function generateMappings() : {[string]: Part|Folder}
 end
 
 --]] Service
+type self = {
+    --]] Properties
+    mappings: {[string]: Part|Folder},
+    
+    --> Signals
+    room_entered: sawdust.SawdustSignal<Player, string>,
+    room_exited: sawdust.SawdustSignal<Player, string>,
+
+    floor_entered: sawdust.SawdustSignal<Player, string>,
+    floor_exited: sawdust.SawdustSignal<Player, string>,
+
+    --> Stats
+    room_stats: {
+        [string]: {
+            players: {[Player]: number}, --> number is the timestamp they entered room
+            activity: {[number]: string} --> number is the timestamp of activity, string is the ID.
+        }
+    },
+
+    player_stats: {
+        [Player]: {
+            current_room: string,
+            current_floor: string,
+        }
+    },
+
+    --]] Methods
+    Fetch: (id: string) -> (Part|Folder)?,
+    GetFloor: (floor_id: number) -> Part?,
+    GetRoom: (floor_id: number, room_id: string, specify: string?) -> Part?,
+
+    PlayerEnteredRoom: (player: Player, room_id: string) -> nil,
+    PlayerExitedRoom: (player: Player, room_id: string) -> nil,
+}
+
 return builder.new('asylum')
     :init(function(self, deps)
         self.mappings = generateMappings()
+
+        --> Create Signals
+        local signal_emitter = sawdust.core.signal.new()
+        self.room_entered = signal_emitter:newSignal()
+        self.room_exited = signal_emitter:newSignal()
+
+        self.floor_entered = signal_emitter:newSignal()
+        self.floor_exited = signal_emitter:newSignal()
+
+        --> Populate Room Stats
+        self.room_stats = {}
+        self.player_stats = {}
+
+        for mapping_id, mapping_part in pairs(self.mappings) do
+            if string.match(mapping_part.Name, "#")~=nil then continue end --> Don't map folder sectors
+            self.room_stats[mapping_id] = {
+                players = {},  --> Players currently in room
+                activity = {}, --> Timestamped activity within room
+            }
+        end
     end)
 
-    :method('fetch', function(self, id: string): (Part|Folder)?
+    --> Room/Floor Fetch
+    :method('Fetch', function(self: self, id: string): (Part|Folder)?
         return self.mappings[id] end)
-    :method('getFloor', function(self, floorId: number): Part?
-        return self:fetch(tostring(floorId)) end)
-    :method('getRoom', function(self, floorId: number, roomId: string, specify: string?): Part?
+    :method('GetFloor', function(self: self, floorId: number): Part?
+        return self.Fetch(tostring(floorId)) :: Part? end)
+    :method('GetRoom', function(self: self, floorId: number, roomId: string, specify: string?): (Part|Folder)?
         local key = specify and (KEY_FORMAT_FLOOR_FOLDER_ROOM):format(floorId, roomId, specify) or (KEY_FORMAT_FLOOR_ROOM):format(floorId, roomId)
-        return self:fetch(key) end)
+        return self.Fetch(key) end)
 
-    :start(function(self)
-        
+    --> Player Tracking
+    :method('PlayerEnteredRoom', function(self: self, player: Player, room_id: string)
+        local this_room_stats = self.room_stats[room_id]
+        local this_tick = tick()
+
+        if this_room_stats then
+            this_room_stats.players[player] = this_tick
+            this_room_stats.activity[this_tick] = `PlayerEntered-{player.UserId}`
+        else
+            error(`[{script.Name}] Failed to fetch RoomStats for room w/ ID "{room_id or "<None Provided>"}"!`)
+        end
+    end)
+    :method('PlayerExitedRoom', function(self: self, player: Player, room_id: string)
+        local this_room_stats = self.room_stats[room_id]
+        local this_tick = tick()
+
+        if this_room_stats then
+            this_room_stats.players[player] = nil
+            this_room_stats.activity[this_tick] = `PlayerExited-{player.UserId}`
+        else
+            error(`[{script.Name}] Failed to fetch RoomStats for room w/ ID "{room_id or "<None Provided>"}"!`)
+        end
+    end)
+
+    :start(function(self: self)
+        local last_update = tick()
+
+        local function CheckInBounds(player: Player, bounds: Part|Folder)
+            local plr_position = player.Character 
+                    and player.Character.PrimaryPart 
+                    and player.Character.PrimaryPart.Position
+                
+            local function check(origin_position: Vector3, box_size: Vector3)
+                return 
+                    (plr_position.X < origin_position.X+box_size.X/2 and plr_position.X>origin_position.X-box_size.X/2)
+                and (plr_position.Y < origin_position.Y+box_size.Y/2 and plr_position.Y>origin_position.Y-box_size.Y/2)
+                and (plr_position.Z < origin_position.Z+box_size.Z/2 and plr_position.Z>origin_position.Z-box_size.Z/2)
+            end
+            if bounds:IsA('Folder') then
+                for _, bounds_part in pairs(bounds:GetChildren()) do
+                    if not bounds_part:IsA('BasePart') then continue end
+                    if check(bounds_part.Position, bounds_part.Size) then
+                        return true
+                    end
+                end
+
+                return false
+            else
+                return check(bounds.Position, bounds.Size)
+            end
+        end
+
+        local runtime = RunService.Heartbeat:Connect(function(dT)
+            --> Tick Limiter
+            local this_tick = tick()
+            local difference = this_tick-last_update
+
+            if difference<60/45 then --> 30fps update
+                return end
+            last_update = this_tick
+
+            --> Iterate Rooms
+            for area_id: string, area_bounds: Part|Folder in pairs(self.mappings) do
+                local is_floor = (tonumber(area_id)~=nil) and true or false
+                
+                coroutine.wrap(function()
+
+                    for _, player: Player in ipairs(Players:GetPlayers()) do
+                        
+                        local in_bounds = CheckInBounds(player, area_bounds)
+
+                        --> Generate Player Stats
+                        if not self.player_stats[player] then
+                            self.player_stats[player] = {
+                                current_floor = '1',
+                                current_room = '1-main_L#main'
+                            }
+                        end
+
+                        --> Compare Player Stats
+                        if not in_bounds then return end
+                        if is_floor then
+
+                            local last_floor = self.player_stats[player].current_floor
+                            if last_floor~=area_id then
+                                --> Send Updates
+                                self.floor_entered:fire(player, area_id)
+                                self.floor_exited:fire(player, last_floor)
+
+                                self.PlayerEnteredRoom(player, area_id)
+                                self.PlayerExitedRoom(player, last_floor)
+
+                                --> Update Current Floor
+                                self.player_stats[player].current_floor = area_id
+                            
+                                -- print(`Exited Floor:  {last_floor}`)
+                                print(`Entered Floor: {area_id}\n`)
+                            end
+
+                        else
+
+                            local is_hash = string.match(area_id, "#")
+                            if is_hash~=nil then continue end --> Only use folders
+
+                            local last_room = self.player_stats[player].current_room
+                            if last_room~=area_id then
+                                --> Send Updates
+                                self.room_entered:fire(player, area_id)
+                                self.room_exited:fire(player, last_room)
+
+                                self.PlayerEnteredRoom(player, area_id)
+                                self.PlayerExitedRoom(player, last_room)
+
+                                --> Update Current Room
+                                self.player_stats[player].current_room = area_id
+
+                                -- print(`Exited Room:  {last_room}`)
+                                print(`Entered Room: {area_id}\n`)
+                            end
+
+                        end
+
+                    end
+
+                end)()
+            end
+        end)
     end)
