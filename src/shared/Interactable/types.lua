@@ -10,9 +10,6 @@
 
 --]]
 
-local sawdust = require(game:GetService('ReplicatedStorage').Sawdust)
-local signal = sawdust.core.signal
-
 local types = {}
 
 --[[ OPTIONS ]]--
@@ -37,7 +34,8 @@ export type _object_options = {
     object_id: string,
     object_name: string,
 
-    authorized: boolean,
+    authorized: boolean?,
+
     instance: {Instance}?,
     prompt_defs: _prompt_defs?,
 }
@@ -57,20 +55,32 @@ export type _prompt_options = {
 local object = {}
 object.__index = object
 
-export type _self_object = {
+export type _self_methods = {
+    __index: _self_methods,
+
+    --[[
+        Constructor function for a object, this will sanitize & parse data
+        and then authorize the prompt with the server if needed (on the
+        client). 
+    ]]
+    new: (opts: _object_options) -> InteractableObject?,
+ 
+    --[[
+        Wraps prompt.new() and integrates prompt with the current object.
+    ]]
+    NewPrompt: (self: InteractableObject, opts: _prompt_options) -> InteractablePrompt,
+    newPrompt: (self: InteractableObject, opts: _prompt_options) -> InteractablePrompt,
+}
+export type _self_fields = {
     object_id: string,
     object_name: string,
 
     instances: {Instance},
     prompt_defs: _prompt_defs?,
 
-    prompts: {[string]: InteractablePrompt}
+    prompts: {[string]: InteractablePrompt|string?}
 }
-export type InteractableObject = typeof(setmetatable({} :: _self_object, object))
-
-function object.new(opts: _object_options) : InteractableObject end
-
-function object:newPrompt(opts: _prompt_options) : InteractablePrompt end
+export type InteractableObject = typeof(setmetatable({} :: _self_fields, {} :: _self_methods))
 
 --#endregion
 

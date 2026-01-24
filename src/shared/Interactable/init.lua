@@ -1,3 +1,4 @@
+--!strict
 --[[
 
     Interactable Object Framework
@@ -16,7 +17,7 @@ local replicatedStorage = game:GetService('ReplicatedStorage')
 --]] Modules
 local types = require(script.types)
 
-local object, prompt = require(script.object), require(script.prompt)
+local object = require(script.object)
 local promptBuilder = require(script.prompt.uiBuilder)
 local util = require(script.util)
 
@@ -37,18 +38,55 @@ local prompt_ui_cache = interactable_cache:findTable('prompt.ui')
 --]] Variables
 --]] Functions
 --]] Framework
-local interactable = {}
+type self_methods = {
+    __index: self_methods,
+    
+    --[[
+        Constructor function for a "Interactable Object".
+        
+        This Object will describe anything that can be interacted with,
+        allowing you to create a special environment for each prompt in
+        that specific ecosystem. 
+        
+    ]]
+    newObject: (opts: types._object_options) -> types.InteractableObject?,
+
+    --[[
+        Attempt to locate a specific object saved in the registrar.
+        If one is found, it will be returned as an InteractableObject. 
+        
+    ]]
+    findObject: (object_id: string) -> types.InteractableObject?,
+
+
+    --[[
+        Constructor function for a PromptUIBuilder, which upon compilation
+        will generate a PromptUI that can be cached (if cache_id is provided). 
+        
+    ]]
+    newPromptUiBuilder: (root_ui: Frame, cache_id: string?) -> types.PromptUiBuilder?,
+    
+    --[[
+        Attempt to locate a specific compiled PromptUiBuilder that has been cached. 
+
+    ]]
+    findPromptUiBuilder: (cache_id: string) -> types.PromptUiBuilder?,
+}
+
+local interactable = {} :: self_methods
 interactable.__index = interactable
 
 --[[ OBJECTS ]]--
 
---[[ interactable.newObject(opts: ObjectOptions) : InteractableObject
+--[[
     Constructor function for a "Interactable Object".
     
     This Object will describe anything that can be interacted with,
     allowing you to create a special environment for each prompt in
-    that specific ecosystem. ]]
-function interactable.newObject(opts: types._object_options) : types.InteractableObject
+    that specific ecosystem. 
+    
+]]
+function interactable.newObject(opts: types._object_options) : types.InteractableObject?
     assert(opts, `Attempt to create new Interactable Object w/o options argument!`)
     assert(type(opts) == 'table',
         `options table is of type "{type(opts)}", it was expected to be... a table!`)
@@ -74,13 +112,16 @@ function interactable.newObject(opts: types._object_options) : types.Interactabl
     local new_object = object.new(opts)
     if new_object then
         objects_cache:setValue(opts.object_id, new_object)
-        return new_object
     end
+
+    return new_object
 end
 
---[[ interactable.findObject(object_name: string) : InteractableObject?
+--[[
     Attempt to locate a specific object saved in the registrar.
-    If one is found, it will be returned as an InteractableObject. ]]
+    If one is found, it will be returned as an InteractableObject. 
+    
+]]
 function interactable.findObject(object_id: string) : types.InteractableObject?
     assert(object_id, `Missing argument #1 for .findObject()! "object_id"`)
     assert(type(object_id) == 'string', 
@@ -88,19 +129,21 @@ function interactable.findObject(object_id: string) : types.InteractableObject?
 
     if not objects_cache:hasEntry(object_id) then
         warn(`[{script.Name}] Failed to find object w/ id "{object_id}"!`)
-        return false; end
+        return nil; end
     
     return objects_cache:getValue(object_id)
 end
 
 --[[ PROMPT UI BUILDER ]]--
 
---[[ interactable.newPromptUiBuilder(root_ui: Frame, cache_id: string?) : PromptUiBuilder
+--[[
     Constructor function for a PromptUIBuilder, which upon compilation
-    will generate a PromptUI that can be cached (if cache_id is provided). ]]
-function interactable.newPromptUiBuilder(root_ui: Frame, cache_id: string?): types.PromptUiBuilder
+    will generate a PromptUI that can be cached (if cache_id is provided). 
+    
+]]
+function interactable.newPromptUiBuilder(root_ui: Frame, cache_id: string?): types.PromptUiBuilder?
     local p_builder = promptBuilder.new(root_ui)
-    if not p_builder then return end
+    if not p_builder then return nil end
 
     if cache_id then
         prompt_ui_cache:setValue(cache_id, p_builder)
@@ -109,8 +152,10 @@ function interactable.newPromptUiBuilder(root_ui: Frame, cache_id: string?): typ
     return p_builder
 end
 
---[[ interactable.findPromptUiBuilder(cache_id: string) : PromptUiBuilder?
-    Attempt to locate a specific compiled PromptUiBuilder that has been cached. ]]
+--[[
+    Attempt to locate a specific compiled PromptUiBuilder that has been cached. 
+
+]]
 function interactable.findPromptUiBuilder(cache_id: string) : types.PromptUiBuilder?
     assert(cache_id, `Attempt to .findPromptUiBuilder() with a nil cache_id!`)
     assert(type(cache_id) == "string", `Attempt to .findPromptUiBuilder() with an invalid type of cache_id! A "{type(cache_id)}" was provided, while a string was expected.`)

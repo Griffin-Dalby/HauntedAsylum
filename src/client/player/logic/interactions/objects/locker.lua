@@ -53,7 +53,7 @@ return function ()
     local test_object = interactable.newObject{
         object_id = 'locker',
         object_name = 'Locker',
-        authorized = true,
+        
 
         prompt_defs = {
             interact_gui = 'basic', --> See interactions.promptUis.basic
@@ -78,16 +78,6 @@ return function ()
         local character = player.Character
         local humanoid = character:FindFirstChildOfClass('Humanoid')
         local root = humanoid.RootPart
-        local torso = character:FindFirstChild('Torso')     :: Part
-        local r_arm = character:FindFirstChild('Right Arm') :: Part
-
-        local r_shoulder = torso['Right Shoulder'] :: Motor6D
-        local rs_c0, rs_c1 = r_shoulder.C0, r_shoulder.C1
-
-        if not r_arm then
-            error(`[{script.Name}] Failed to find Right Arm to Open Locker!`)
-            return 
-        end
         
         --> Setup arm
         local hide_anim = Instance.new('Animation')
@@ -96,7 +86,7 @@ return function ()
         local animator = character:FindFirstChildOfClass('Humanoid'):FindFirstChildOfClass('Animator')
         local hide_loaded = animator:LoadAnimation(hide_anim)
 
-        local locker_model = locker.Parent.Parent :: Model
+        local locker_model = locker.Parent and locker.Parent.Parent :: Model
         local hinge = locker_model.Frame.HingeWall.Hinge :: HingeConstraint
         local handle = locker_model['Door']['Body']['HandleAttachment'] :: Attachment
 

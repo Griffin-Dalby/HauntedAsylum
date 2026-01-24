@@ -44,13 +44,14 @@ prompt.__index = prompt
 
 type _a_inherited_defs = { instance_table: {Instance}, object_name: string, object_id: string }
 
---[[ prompt.new(opts: PromptOptions, inherited_defs) : InteractablePrompt
+--[[
     Constructor function for the prompt object, this will process the
     provided inherited defs & prompt options & create a new prompt.
 
     If needed on the client, the prompt will be authorized with the
-    server in order to start a "Replication Pipeline" of sorts. ]]
-function prompt.new(opts: types._prompt_options, inherited_defs: types._prompt_defs & _a_inherited_defs): types.InteractablePrompt
+    server in order to start a "Replication Pipeline" of sorts. 
+]]
+function prompt.new(opts: types._prompt_options, inherited_defs: (types._prompt_defs & _a_inherited_defs)|types._prompt_defs): types.InteractablePrompt
     local self = setmetatable({} :: types._self_prompt, prompt)
 
     self.prompt_id = opts.prompt_id

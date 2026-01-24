@@ -59,7 +59,7 @@ helper.verify.player_table = function(players: {}) : {[number]: Player}
     for i, inst in pairs(players) do
         if typeof(inst) ~= 'Instance' or not inst:IsA('Player') then
             error(`Key in Player Table @ #{i} isn't a player!`)
-            continue; end
+        end
 
         table.insert(clean, inst)
     end
@@ -67,7 +67,7 @@ helper.verify.player_table = function(players: {}) : {[number]: Player}
     return clean
 end
 
-helper.verify.instance = function(provided) : Instance
+helper.verify.instance = function(provided) : Instance | {Instance}
     if type(provided) == 'table' then
         local container = provided[1]     :: Instance
         local search_params = provided[2] :: {[string]: any}

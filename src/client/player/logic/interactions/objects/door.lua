@@ -36,7 +36,6 @@ return function ()
     local door_object = interactable.newObject{
         object_id = 'door',
         object_name = 'Door',
-        authorized = true,
 
         prompt_defs = {
             interact_gui = 'basic',
@@ -48,7 +47,7 @@ return function ()
         instance = {workspace.doors, {}},
     }
 
-    local door_interact = door_object:newPrompt{
+    local door_interact = door_object:NewPrompt{
         prompt_id = 'interact',
         action = 'Interact',
         cooldown = 1,
