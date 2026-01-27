@@ -29,6 +29,7 @@ function identity.new(): types.ConditionIdentity
     local self = {} :: types.self_condition_identity
 
     self.player = require(script['checks.player'])(self)
+    self.asylum = require(script['checks.asylum'])(self)
 
     return setmetatable(self, identity)
 end
