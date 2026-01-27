@@ -28,6 +28,8 @@ local entity_cdn = cdn.getProvider('entity')
 --]] Controller
 local entity_controllers = {}
 
-for _, meta: {} in pairs(entity_cdn:getAllAssets()) do
+for _, meta: {cdnInfo: { assetId: string }, behavior: { instantiate: () -> any? }} in pairs(entity_cdn:getAllAssets()) do
+    
     entity_controllers[meta.cdnInfo.assetId] = meta.behavior.instantiate()
+
 end

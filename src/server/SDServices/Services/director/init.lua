@@ -1,31 +1,29 @@
 --[[
 
-    Entity SDService
+    Director SDService
 
     Griffin Dalby
-    2025.11.02
+    2026.1.26
 
-    This module will provide a SDService for Entity behavior,
-    allowing a much more flexible ecosystem and centralized
-    control.
+    This module will provide a SDService for the Entity Director
 
 --]]
 
 --]] Services
-local replicatedStorage = game:GetService('ReplicatedStorage')
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
 --]] Modules
 --]] Sawdust
-local sawdust = require(replicatedStorage.Sawdust)
+local Sawdust = require(ReplicatedStorage.Sawdust)
 
-local builder = sawdust.builder
+local builder = Sawdust.builder
 
 --]] Settings
 --]] Constants
 --]] Variables
 --]] Functions
 --]] Module
-local entity_service = builder.new('entities')
+local Director = builder.new('director')
     :loadMeta(script.meta)
     :init(function(self, deps)
     end)
@@ -38,4 +36,4 @@ local entity_service = builder.new('entities')
         end
     end)
 
-return entity_service
+return Director

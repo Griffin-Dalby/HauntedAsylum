@@ -19,9 +19,14 @@ local players = game:GetService('Players')
 local sawdust = require(replicatedStorage.Sawdust)
 
 local networking = sawdust.core.networking
+local Cache = sawdust.core.cache
 
 --> Networking
 local mechanics_channel = networking.getChannel('mechanics')
+
+--> Cache
+local players_cache = Cache.findCache('players')
+local session_cache = players_cache:createTable('session', true)
 
 --]] Settings
 --]] Constants
@@ -63,6 +68,7 @@ mechanics_channel.head:route()
             return end
 
         --> Validate Direction
+        camera_direction = camera_direction.unit
         local direction_mag = camera_direction.Magnitude
         if direction_mag<.9 or direction_mag>1.1 then
             warn(`[{script.Name}] Player ({caller.Name}.{caller.UserId}) provided a invalid direction! (Magnitude: {direction_mag})`)
@@ -76,6 +82,15 @@ mechanics_channel.head:route()
         --     warn(`[{script.Name}] Player ({caller.Name}.{caller.UserId}) provided excessive body_yaw: {body_yaw}`)
         --     return end
         
+        --> Global Cache
+        if session_cache:hasEntry(req.caller) then
+            local player_cache = session_cache:getValue(req.caller)
+            player_cache.head_direction = {camera_direction, body_yaw}
+        else
+            print('No session cache')
+        end
+
+        --> Local Cache
         cache[req.caller.UserId] = {camera_direction, body_yaw}
     end)
 

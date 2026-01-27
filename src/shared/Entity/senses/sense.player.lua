@@ -100,7 +100,7 @@ local dac_meta = {
         end
 
         return t
-    end
+    end,
 }
 
 function newDataAugmentController(cortex: sense_types.EntityCortex)
@@ -126,7 +126,7 @@ end
 
 return function(cortex: sense_types.EntityCortex) : sense_types.PlayerSense
     local sense = {} :: sense_types.self_sense_player
-    setmetatable(sense, {__index = sense})
+    setmetatable(sense, {__index = sense} :: sense_types.methods_sense_player)
 
     local settings = cortex.__settings.player
 
@@ -202,6 +202,18 @@ return function(cortex: sense_types.EntityCortex) : sense_types.PlayerSense
         assert(character, `[{script.Name}] :getPlayerFromRoot() failed to find player from character ({character:GetFullName()})`)
 
         return player
+    end
+
+    function sense:getPlayerLookDirection(player: Player)
+        local look_direction = {Vector3.new(0, 0, 1), 0}
+        if session_cache:hasEntry(player) then
+            local player_data = session_cache:getValue(player)
+            look_direction = player_data.head_direction
+        else
+            warn(`[{script.Name}] Failed to locate Session Data for "{player.Name}#{player.UserId}"!`)    
+        end
+
+        return look_direction or {Vector3.new(0, 0, 1), 0}
     end
 
     --> TODO: Enforce SDF Functions

@@ -75,10 +75,21 @@ export type DataAugmentController = {
     enforceSDF: (flag_name: string, flag_value: any)->DataAugmentController
 }
 
+export type methods_sense_player = {
+    __index: methods_sense_player,
+
+    findPlayer: (self: PlayerSense) -> {[Player]: Model},
+    findPlayersInRadius: (self: PlayerSense, radius: number) -> {[Player]: number} & DataAugmentController,
+
+    adheresSDF: (self: PlayerSense, player: Player, flag_name: string, expect_value: any) -> boolean,
+    getPlayerFromRoot: (self: PlayerSense, root_part: BasePart) -> Player?,
+
+    getPlayerLookDirection: (self: PlayerSense) -> {Vector3|number}
+}
 export type self_sense_player = {
 
 }
-export type PlayerSense = typeof(setmetatable({} :: self_sense_player, sense_player))
+export type PlayerSense = typeof(setmetatable({} :: self_sense_player, {} :: methods_sense_player))
 
 function sense_player:findPlayers()
     : {[Player]: Model} end
