@@ -21,7 +21,8 @@ local objective, condition = require(replicatedStorage.Shared.Objective).withCon
 --]] Variables
 --]] Functions
 --]] Module
-local area1, area2, area3 = workspace:WaitForChild('Area1'), workspace:WaitForChild('Area2'), workspace:WaitForChild('Area3')
+local obj_area = workspace:WaitForChild("objectives"):WaitForChild("Intro")
+local area1, area2, area3 = obj_area:WaitForChild('EnterAsylumn'), obj_area:WaitForChild('Area2'), obj_area:WaitForChild('Area3')
 
 return function()
     local intro_objectives = {}

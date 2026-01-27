@@ -11,7 +11,7 @@
 --]]
 
 --]] Services
-local replicatedStorage = game:GetService('ReplicatedStorage')
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
 
 --]] Modules
 local types = require(script.types)
@@ -20,14 +20,18 @@ local util  = require(script.util)
 local condition_tester = require(script.__condition_tester)
 
 --]] Sawdust
-local sawdust = require(replicatedStorage.Sawdust)
+local sawdust = require(ReplicatedStorage.Sawdust)
 
+local networking = sawdust.core.networking
 local signal = sawdust.core.signal
 local cache = sawdust.core.cache
 
+--> Networking
+local GameChannel = networking.getChannel('game')
+
 --> Cache
 local players_cache = cache.findCache('players')
-local session = players_cache:findTable('session')
+local session = players_cache:createTable('session', true)
 
 local objective_cache = cache.findCache('objectives')
 
@@ -44,9 +48,34 @@ local package_list = {
 local objective = {}
 objective.__index = objective
 
+--> Forward-Exports
+export type Objective = types.Objective
+export type Condition = types.Condition
+
 --> Package Utilities
 function objective.withConditions()
     return objective, require(package_list.condition) end
+function objective.batchObjective(objective_data: types.Objective)
+    local batched = {
+        id = objective_data.id,
+        appearance = { --> Pack each Objective w/ it's name and description variants
+            objective_data.name,
+            objective_data.description.short,
+            objective_data.description.long
+        },
+
+        conditions = {}
+    }
+
+    for i, condition in pairs(objective_data.conditions) do
+        batched.conditions[i] = { --> Pack each condition w/ it's ID and Description
+            condition.id,
+            condition.__env.__desc
+        }
+    end
+
+    return batched
+end
 
 --> Objective Behavior
 function objective.new(objective_settings: types.ObjectiveSettings) : types.Objective
@@ -71,12 +100,21 @@ function objective.new(objective_settings: types.ObjectiveSettings) : types.Obje
 
     self.completed = emitter:newSignal()
     self.completed:connect(function(player: Player)
+        --> Broadcast
         print(`Objective [{self.id}] completed by player [{player.Name}]`)
+        GameChannel.objective:with()
+            :broadcastTo(player)
+            :intent('completed_objective')
+            :data(self.id)
+            :fire()
+
+        --> Check for Next Objective
         local next_objective_id = self.__fulfilled(true)
         if not objective_cache:hasEntry(next_objective_id) then
             error(`Objective [{next_objective_id}] does not exist! Cannot switch for player [{player.Name}] (from [{self.id}])`)
             return end
 
+        --> Switch to Next Objective
         if next_objective_id then
             print(`Switching to Objective [{next_objective_id}] for player [{player.Name}]`)
 
@@ -84,6 +122,11 @@ function objective.new(objective_settings: types.ObjectiveSettings) : types.Obje
             local player_session = session:getValue(player)
 
             player_session.current_objective = objective_cache:getValue(next_objective_id)
+            GameChannel.objective:with()
+                :broadcastTo(player)
+                :intent('new')
+                :data( objective.batchObjective( player_session.current_objective ) )
+                :fire()
         end
     end)
 

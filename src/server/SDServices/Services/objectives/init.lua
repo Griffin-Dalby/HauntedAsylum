@@ -19,11 +19,17 @@ local runService = game:GetService('RunService')
 local players = game:GetService('Players')
 
 --]] Modules
+local Objective = require(replicatedStorage.Shared.Objective)
+
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 
+local networking = sawdust.core.networking
 local builder = sawdust.builder
 local cache = sawdust.core.cache
+
+--> Networking
+local GameChannel = networking.getChannel('game')
 
 --> Cache
 local players_cache = cache.findCache('players')
@@ -51,6 +57,18 @@ local objectives_service = builder.new('objectives')
         local player_session = session:getValue(player)
 
         player_session.current_objective = self.chapter.intro[1]
+        
+        if not player.Character then player.CharacterAdded:Wait() end
+        
+        local batched = Objective.batchObjective( player_session.current_objective )
+        print(batched)
+
+        task.wait(.25)
+        GameChannel.objective:with()
+            :broadcastTo(player)
+            :intent('new')
+            :data( batched )
+            :fire()
     end)
     :start(function(self)
         runService.Heartbeat:Connect(function(dt)

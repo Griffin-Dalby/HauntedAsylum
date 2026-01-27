@@ -12,6 +12,7 @@
 
 --]] Services
 local replicatedStorage = game:GetService('ReplicatedStorage')
+local Https = game:GetService("HttpService")
 
 --]] Modules
 local types = require(script.Parent.types)
@@ -22,6 +23,10 @@ local identity = require(script.identity)
 local sawdust = require(replicatedStorage.Sawdust)
 
 local signal = sawdust.core.signal
+local Networking = sawdust.core.networking
+
+--> Networking
+local GameChannel = Networking.getChannel("game")
 
 --]] Settings
 --]] Constants
@@ -63,6 +68,8 @@ function condition.new(condition_settings: types.ConditionSettings, check_condit
     self.__identity = identity.new()
     self.__env = processSettings(condition_settings, check_condition)
 
+    self.id = Https:GenerateGUID(false)
+
     --> Fill Values
     self.fulfillments = {}
 
@@ -82,6 +89,12 @@ function condition:update(player: Player): boolean
 
     if is_fulfilled~=was_fulfilled then
         self.fulfillment:fire(player, is_fulfilled)
+
+        GameChannel.objective:with()
+            :broadcastTo(player)
+            :intent('update_condition')
+            :data(self.id, is_fulfilled)
+            :fire()
 
         if is_fulfilled then
             self.fulfillments[player] = true
