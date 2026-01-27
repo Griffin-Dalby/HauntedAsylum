@@ -45,6 +45,8 @@ local elapsed = 0
 --]] Functions
 --]] Module
 local objectives_service = builder.new('objectives')
+    :dependsOn('asylum')
+    
     :loadMeta(script.meta)
     :init(function(self, deps)
         --> Initalize Chapters
