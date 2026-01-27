@@ -18,12 +18,14 @@ local __ = {}
 --> Identity
 local identity_module = script.Parent.condition.identity
 local player_checks = require(identity_module["checks.player"])
+local asylum_checks = require(identity_module["checks.asylum"])
 
 export type methods_condition_identity = {
     __index: methods_condition_identity
 }
 export type self_condition_identity = {
     player: player_checks.PlayerChecks,
+    asylum: asylum_checks.AsylumChecks
 }
 export type ConditionIdentity = typeof(setmetatable({}::self_condition_identity,{}::methods_condition_identity))
 
