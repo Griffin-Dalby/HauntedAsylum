@@ -35,6 +35,7 @@ local asymap = workspace:WaitForChild("asylum.map")
 --]] Functions
 local function generateMappings() : {[string]: Part|Folder}
     local mappings: {[string]: Part|Folder} = {}
+    local floor_sorted: {[string]: {[string]: Part|Folder}} = {}
 
     for _, floor: Part in asymap:GetChildren() do
         if not floor:IsA("Part") then continue end
@@ -45,6 +46,10 @@ local function generateMappings() : {[string]: Part|Folder}
             continue end
 
         local id: string = tostring(split[2])
+
+        floor_sorted[id] = {}
+        local floor_tbl = floor_sorted[id]
+
         mappings[id] = floor
         for _, child: Instance in floor:GetChildren() do
             if child:IsA('Folder') then
@@ -52,6 +57,7 @@ local function generateMappings() : {[string]: Part|Folder}
                 assert(not mappings[f_key], `Collision detected while mapping asylum! (F-F "{f_key}" already exists)`)
 
                 mappings[f_key] = child
+                floor_tbl[f_key] = {}
 
                 for _, part: Instance in child:GetChildren() do
                     if not part:IsA('Part') then continue end
@@ -59,23 +65,26 @@ local function generateMappings() : {[string]: Part|Folder}
                     local key = (KEY_FORMAT_FLOOR_FOLDER_ROOM):format(id, child.Name, part.Name)
                     assert(not mappings[key], `Collision detected while mapping asylum! (F-F-R "{key}" already exists)`)
                     mappings[key] = part
+                    floor_tbl[f_key][key] = part
                 end
             elseif child:IsA('Part') then
                 local key = (KEY_FORMAT_FLOOR_ROOM):format(id, child.Name)
                 assert(not mappings[key], `Collision detected while mapping asylum! (F-R "{key}" already exists)`)
 
                 mappings[key] = child
+                floor_tbl[key] = child
             end
         end
     end
 
-    return mappings
+    return mappings, floor_sorted
 end
 
 --]] Service
 type self = {
     --]] Properties
     mappings: {[string]: Part|Folder},
+    mappings_sorted: {[string]: {[string]: Part|Folder}},
     
     --> Signals
     room_entered: sawdust.SawdustSignal<Player, string>,
@@ -110,7 +119,9 @@ type self = {
 
 return builder.new('asylum')
     :init(function(self, deps)
-        self.mappings = generateMappings()
+        local mappings, sorted_mappings = generateMappings()
+        self.mappings = mappings
+        self.mappings_sorted = sorted_mappings --> Make accessors
 
         --> Create Signals
         local signal_emitter = sawdust.core.signal.new()
@@ -124,7 +135,7 @@ return builder.new('asylum')
         self.room_stats = {}
         self.player_stats = {}
 
-        for mapping_id, mapping_part in pairs(self.mappings) do
+        for mapping_id, mapping_part in pairs(mappings) do
             if string.match(mapping_part.Name, "#")~=nil then continue end --> Don't map folder sectors
             self.room_stats[mapping_id] = {
                 players = {},  --> Players currently in room
