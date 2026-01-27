@@ -18,7 +18,6 @@ local interactable = require(replicatedStorage.Shared.Interactable)
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 
-local networking = sawdust.core.networking
 local cache = sawdust.core.cache
 
 --> Cache
@@ -38,6 +37,8 @@ return function ()
         object_id = 'locker',
         object_name = 'Locker',
 
+        authorized = false,
+
         instance = {workspace.environment.locker, {}},
         prompt_defs = {
             range = 15
@@ -49,7 +50,7 @@ return function ()
         action = 'Hide',
         cooldown = .5,
     }
-    hide_prompt.triggered:connect(function(self, locker: Model, player: Player)
+    hide_prompt.triggered:connect(function(self, locker: Model & { HidingPosition: Attachment }, player: Player)
         local player_data = session_cache:getValue(player)
         if player_data.is_hiding then
             error(`[{script.Name}] Player {player.Name}.{player.UserId} is already hiding!`)
@@ -60,7 +61,7 @@ return function ()
         local root_part = humanoid.RootPart
         player_data.is_hiding = {locker, root_part.CFrame}
             
-        local locker_model = locker.Parent.Parent :: Model
+        local locker_model = locker.Parent and locker.Parent.Parent :: Model
         local body = locker_model['Door']['Body'] :: Part
 
         body:SetNetworkOwner(player)

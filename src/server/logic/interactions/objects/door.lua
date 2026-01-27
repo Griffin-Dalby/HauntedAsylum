@@ -37,6 +37,8 @@ return function ()
         object_id = 'door',
         object_name = 'Door',
 
+        authorized = false,
+
         instance = {workspace.doors, {}},
         prompt_defs = {
             range = 10
