@@ -19,7 +19,11 @@ local players = game:GetService('Players')
 --]] Sawdust
 local sawdust = require(replicatedStorage.Sawdust)
 
+local Networking = sawdust.core.networking
 local cache = sawdust.core.cache
+
+--> Networking
+local MechanicsChannel = Networking.getChannel("mechanics")
 
 --> Cache
 local movement_cache = cache.findCache('movement')
@@ -43,7 +47,8 @@ local crouch_noclip = {
 --]] Constants
 local player = players.LocalPlayer
 local character = player.Character
-local root_part = character:WaitForChild('HumanoidRootPart') :: Part
+local humanoid = character:FindFirstChildOfClass("Humanoid")
+local root_part = humanoid.RootPart
 
 local camera = workspace.CurrentCamera
 
@@ -61,7 +66,6 @@ local function SetNoclip(noclip_status: boolean)
 
                 for _, part: Instance in pairs(model:GetChildren()) do
                     if part:IsA("BasePart") then
-                        print(`Noclip {part:GetFullName()}: {noclip_status}`)
                         part.CollisionGroup = if noclip_status then "CrouchNoclip" else "Default"
                         part.CanCollide = not noclip_status
                     end
@@ -71,6 +75,85 @@ local function SetNoclip(noclip_status: boolean)
         end
 
     end
+end
+
+--> Crouch Hiding
+local function GenerateHideSpots() : { Model }
+    local chs = {}
+
+    for _, model_folder: Folder in pairs(crouch_noclip) do
+        for _, model in pairs(model_folder:GetChildren()) do
+            if not model:IsA('Model') then continue end
+            if not model:FindFirstChild('Hide') then
+                continue end
+
+            --> Cache Model
+            table.insert(chs, model)
+        end
+    end
+
+    return chs
+end
+
+local function FindClosestSpot(spots: { Model }) : (Model, number)
+    local closest = {math.huge, nil}
+
+    for _, hide_model in ipairs(spots) do
+        local prim_part = hide_model.PrimaryPart
+
+        local closest_dist = closest[1]
+        local our_dist = (root_part.Position - prim_part.Position).Magnitude
+
+        if our_dist < closest_dist then
+            closest = {our_dist, hide_model}
+        end
+    end
+
+    return closest[2], closest[1]
+end
+
+local function CheckInHidingSpot(hide_part: Part) : boolean
+    --> Extract Pos & Size
+    local root_p, hide_p = root_part.Position, hide_part.Position
+    local root_s, hide_s = root_part.Size, hide_part.Size
+
+    --> Check Positions
+    local x_valid = (root_p.X+root_s.X/2) <= (hide_p.X+hide_s.X/2) 
+                and (root_p.X-root_s.X/2) >= (hide_p.X-hide_s.X/2)
+
+    -- local y_valid = (root_p.Y+root_s.Y/2) <= (hide_p.Y+hide_s.Y/2)
+    --             and (root_p.Y-root_s.Y/2) >= (hide_p.Y-hide_s.Y/2)
+
+    local z_valid = (root_p.Z+root_s.Z/2) <= (hide_p.Z+hide_s.Z/2)
+                and (root_p.Z-root_s.Z/2) >= (hide_p.Z-hide_s.Z/2)
+
+    return x_valid and z_valid
+end
+
+local function StartCHidePromise(hide_part: Part, callback: () -> nil)
+    local last_root_pos = root_part.Position
+
+    local hide_promise: RBXScriptConnection?
+    hide_promise = runService.Heartbeat:Connect(function() 
+        --> Only run on Pos Changes
+        local now_root_pos = root_part.Position
+
+        if last_root_pos == now_root_pos then return end
+        last_root_pos = now_root_pos
+
+        --> Check Hiding Spot
+        local is_hiding = CheckInHidingSpot(hide_part)
+        if not is_hiding then
+            if hide_promise then
+                hide_promise:Disconnect()
+                hide_promise = nil
+
+                callback()
+            else
+                warn(`[{script.Name}] chide_promise MemLeak detected!`)
+            end
+        end
+    end)
 end
 
 --]] Module
@@ -87,6 +170,7 @@ type self = {
     is_jumping: boolean,
 
     stand_queued: boolean,
+    crouch_hiding: boolean,
 
     character: Model,
     humanoid: Humanoid,
@@ -115,6 +199,7 @@ function controller.new(env: { camera: { camera_offset: Vector3 } }) : MovementC
     self.is_jumping = false
 
     self.stand_queued = false
+    self.crouch_hiding = false
 
     movement_cache:setValue('is_sprinting', false)
     movement_cache:setValue('is_crouched', false)
@@ -126,6 +211,7 @@ function controller.new(env: { camera: { camera_offset: Vector3 } }) : MovementC
     self.speed_modifiers = {}
 
     self.stand_params = RaycastParams.new()
+    self.stand_params.CollisionGroup = 'Props'
     self.stand_params.FilterDescendantsInstances = { character }
     self.stand_params.FilterType = Enum.RaycastFilterType.Exclude
 
@@ -136,25 +222,86 @@ function controller.new(env: { camera: { camera_offset: Vector3 } }) : MovementC
 
     --> Runtime
     local logic_cache: {
-        stand_queue_time: number?
+        stand_queue_time: number?,
+
+        crouch_hide_delta: number?,
+        crouch_hide_spots: { Model }?
     } = {}
     self.logic = runService.Heartbeat:Connect(function(dt)
+        --> Crouch Hide
+        if not logic_cache.crouch_hide_spots then
+            local chs = GenerateHideSpots()
+            logic_cache.crouch_hide_spots = chs
+        elseif self.is_crouched then
+            --> Timer
+            local chd = logic_cache.crouch_hide_delta or 0
+            chd += dt
+
+            --> Check Spots
+            if chd>=15/60 and not self.crouch_hiding then
+                chd = 0
+
+                --> Determine Closest Spot
+                local closest = FindClosestSpot(logic_cache.crouch_hide_spots)
+                local hide_part = closest:FindFirstChild("Hide") :: BasePart
+                local hide_id = closest:GetAttribute("hide_id")
+
+                if hide_id then
+                    --> Check Occlusion
+                    local in_spot = CheckInHidingSpot(hide_part)
+                    
+                    if in_spot then
+                        --> Send Request
+                        local s, data = MechanicsChannel.hiding:with()
+                            :intent("crouch_hide")
+                            :data(hide_id)
+                            :invoke():wait()
+
+                        if not s then
+                            -- warn(`[{script.Name}] Failed to crouch_hide, Error ID: "{data[1]}".`)
+                        else
+                            self.crouch_hiding = true
+                            StartCHidePromise(hide_part, function()
+                                self.crouch_hiding = false
+                                print(`[{script.Name}] Quit hiding...`)
+                            end)
+
+                            print(`[{script.Name}] Started hiding...`)
+                        end
+                    end
+                else
+                    warn(`[{script.Name}] Closest model @ "{closest:GetFullName()}" is missing it's hide_id!`)
+                end
+            end
+
+            logic_cache.crouch_hide_delta = chd
+        end
+
+        --> Stand Queue
         if self.stand_queued then
             local sqt = logic_cache.stand_queue_time or 0
             sqt += dt
 
-            if sqt>=45/60 then
+            if sqt>=20/60 then
                 local cast = workspace:Raycast(root_part.Position, root_part.CFrame.UpVector*2.6, self.stand_params)
                 if cast then
                     return
                 end
 
                 --> Stand up
+                self.crouch_hiding = false
                 self.is_crouched = false
-                movement_cache:setValue('is_crouched', false)
-                SetNoclip(false)
+                self.stand_queued = false
 
+                movement_cache:setValue('is_crouched', false)
+                task.delay(.05, function()
+                    SetNoclip(false)
+                end)
+
+                sqt = 0
             end
+
+            logic_cache.stand_queue_time = sqt
         end
 
         --> Crouching
@@ -197,7 +344,6 @@ function controller:setCrouch(is_crouched: boolean)
     if not is_crouched then
         local cast = workspace:Raycast(root_part.Position, root_part.CFrame.UpVector*2.6, self.stand_params)
         if cast then
-            print("Prevent stand due to cast hit")
             self.stand_queued = not is_crouched
             return
         end
