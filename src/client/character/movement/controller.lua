@@ -36,6 +36,10 @@ local crouch_fov = base_fov - 10
 
 local acceleration = .1
 
+local crouch_noclip = {
+    workspace.environment.hiding_desks
+}
+
 --]] Constants
 local player = players.LocalPlayer
 local character = player.Character
@@ -45,8 +49,28 @@ local camera = workspace.CurrentCamera
 
 --]] Variables
 --]] Functions
-function lerp(a: number, b: number, t: number)
+local function lerp(a: number, b: number, t: number)
     return a + (b - a) * t
+end
+
+local function SetNoclip(noclip_status: boolean)
+    for _, model_folder: Folder in pairs(crouch_noclip) do
+
+        for _, model: Instance in pairs(model_folder:GetChildren()) do
+            if model:IsA("Model") then
+
+                for _, part: Instance in pairs(model:GetChildren()) do
+                    if part:IsA("BasePart") then
+                        print(`Noclip {part:GetFullName()}: {noclip_status}`)
+                        part.CollisionGroup = if noclip_status then "CrouchNoclip" else "Default"
+                        part.CanCollide = not noclip_status
+                    end
+                end
+
+            end
+        end
+
+    end
 end
 
 --]] Module
@@ -62,18 +86,23 @@ type self = {
     is_crouched: boolean,
     is_jumping: boolean,
 
+    stand_queued: boolean,
+
     character: Model,
     humanoid: Humanoid,
 
     speed: {number|number},
     fov: {number|number},
+    cam_y_off: {number},
+
     speed_modifiers: {[string]: number}, --> [id]: multiplier
+    stand_params: RaycastParams,
 
     logic: RBXScriptConnection
 }
 export type MovementController = typeof(setmetatable({} :: self, controller))
 
-function controller.new(env: {}) : MovementController
+function controller.new(env: { camera: { camera_offset: Vector3 } }) : MovementController
     local self = setmetatable({} :: self, controller)
 
     --> Initalize
@@ -85,6 +114,8 @@ function controller.new(env: {}) : MovementController
     self.is_crouched = false
     self.is_jumping = false
 
+    self.stand_queued = false
+
     movement_cache:setValue('is_sprinting', false)
     movement_cache:setValue('is_crouched', false)
 
@@ -94,18 +125,43 @@ function controller.new(env: {}) : MovementController
 
     self.speed_modifiers = {}
 
+    self.stand_params = RaycastParams.new()
+    self.stand_params.FilterDescendantsInstances = { character }
+    self.stand_params.FilterType = Enum.RaycastFilterType.Exclude
+
     --> Index Player
     local player = players.LocalPlayer
     self.character = player.Character
     self.humanoid = self.character:FindFirstChildOfClass('Humanoid')
 
     --> Runtime
-    self.logic = runService.Heartbeat:Connect(function()
+    local logic_cache: {
+        stand_queue_time: number?
+    } = {}
+    self.logic = runService.Heartbeat:Connect(function(dt)
+        if self.stand_queued then
+            local sqt = logic_cache.stand_queue_time or 0
+            sqt += dt
+
+            if sqt>=45/60 then
+                local cast = workspace:Raycast(root_part.Position, root_part.CFrame.UpVector*2.6, self.stand_params)
+                if cast then
+                    return
+                end
+
+                --> Stand up
+                self.is_crouched = false
+                movement_cache:setValue('is_crouched', false)
+                SetNoclip(false)
+
+            end
+        end
+
         --> Crouching
         self.can_sprint = (not self.is_crouched) and not self.is_hiding
         self.can_jump = (not self.is_crouched) and not self.is_hiding
 
-        self.cam_y_off[2] = self.is_crouched and -2 or 0
+        self.cam_y_off[2] = self.is_crouched and -2.5 or 0
         self.cam_y_off[1] = lerp(self.cam_y_off[1], self.cam_y_off[2], .25)
 
         env.camera.camera_offset = Vector3.new(0, self.cam_y_off[1], 0)
@@ -135,8 +191,24 @@ function controller.new(env: {}) : MovementController
 end
 
 function controller:setCrouch(is_crouched: boolean)
+    if not self.can_crouch then return end
+
+    --> Raycast Above
+    if not is_crouched then
+        local cast = workspace:Raycast(root_part.Position, root_part.CFrame.UpVector*2.6, self.stand_params)
+        if cast then
+            print("Prevent stand due to cast hit")
+            self.stand_queued = not is_crouched
+            return
+        end
+    end
+
+    --> Set Crouch Status
     self.is_crouched = is_crouched
     movement_cache:setValue('is_crouched', is_crouched)
+
+    --> Set Noclip
+    SetNoclip(is_crouched)
 end
 
 function controller:setSprint(is_sprinting: boolean)

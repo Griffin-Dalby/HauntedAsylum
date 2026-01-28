@@ -14,7 +14,6 @@
 local replicatedStorage = game:GetService('ReplicatedStorage')
 local contextActions = game:GetService('ContextActionService')
 local soundService = game:GetService('SoundService')
-local runService = game:GetService('RunService')
 
 --]] Modules
 local camera = require(script:WaitForChild('camera'))
@@ -36,7 +35,7 @@ local c_env = cache.findCache('env')
 
 --]] Settings
 local keybinds = {
-    crouch = {Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonR3},
+    crouch = {Enum.KeyCode.LeftControl, Enum.KeyCode.C, Enum.KeyCode.ButtonR3},
     sprint = {Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3},
     toggle_flashlight = { Enum.KeyCode.F, Enum.KeyCode.ButtonY }
 }
@@ -44,7 +43,7 @@ local keybinds = {
 local button_sfx = {
     [true]  = sfx_cdn:getAsset('flashlight_button_pressed'),
     [false] = sfx_cdn:getAsset('flashlight_button_depress')
-} :: {[string]: Sound}
+} :: {[boolean]: Sound}
 
 --]] Constants
 local rng = Random.new()
