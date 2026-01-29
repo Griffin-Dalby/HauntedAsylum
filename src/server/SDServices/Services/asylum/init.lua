@@ -13,7 +13,6 @@
 
 --]] Services
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
-local ServerStorage = game:GetService('ServerStorage')
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 
@@ -33,10 +32,12 @@ local asymap = workspace:WaitForChild("asylum.map")
 
 --]] Variables
 --]] Functions
-local function generateMappings() : {[string]: Part|Folder}
+--> Mappings Generator
+local function GenerateMappings() : {[string]: Part|Folder}
     local mappings: {[string]: Part|Folder} = {}
-    local floor_sorted: {[string]: {[string]: Part|Folder}} = {}
+    local floor_sorted: {[number]: {[string]: {connections: {Part|Folder}, room: Part|Folder}}} = {}
 
+    --> Create Mappings
     for _, floor: Part in asymap:GetChildren() do
         if not floor:IsA("Part") then continue end
 
@@ -45,34 +46,51 @@ local function generateMappings() : {[string]: Part|Folder}
             warn(`Floor {floor.Name} has invalid name format, expected '$prefix_$id'`)
             continue end
 
-        local id: string = tostring(split[2])
+        local id = tonumber(split[2]) or 1
 
         floor_sorted[id] = {}
         local floor_tbl = floor_sorted[id]
 
-        mappings[id] = floor
+        mappings[tostring(id)] = floor
         for _, child: Instance in floor:GetChildren() do
+            local child_name = child.Name
+
             if child:IsA('Folder') then
-                local f_key = (KEY_FORMAT_FLOOR_FOLDER):format(id, child.Name)
+                local f_key = (KEY_FORMAT_FLOOR_FOLDER):format(id, child_name)
                 assert(not mappings[f_key], `Collision detected while mapping asylum! (F-F "{f_key}" already exists)`)
 
                 mappings[f_key] = child
-                floor_tbl[f_key] = {}
+                floor_tbl[child_name] = {connections = {}}
 
                 for _, part: Instance in child:GetChildren() do
                     if not part:IsA('Part') then continue end
 
-                    local key = (KEY_FORMAT_FLOOR_FOLDER_ROOM):format(id, child.Name, part.Name)
+                    --> Generate Mapping
+                    local part_name = part.Name
+                    local key = (KEY_FORMAT_FLOOR_FOLDER_ROOM):format(id, child_name, part_name)
                     assert(not mappings[key], `Collision detected while mapping asylum! (F-F-R "{key}" already exists)`)
                     mappings[key] = part
-                    floor_tbl[f_key][key] = part
+
+                    --> Get Connections
+                    local room_connections_raw = part:FindFirstChild("connections")
+                    local room_connections = if room_connections_raw~=nil then {} else nil
+                    if room_connections_raw then
+                        for _, connection_p in pairs(room_connections_raw:GetChildren()) do
+                            if not connection_p:IsA("BasePart") then continue end
+
+                            room_connections[connection_p.Name] = connection_p.Position
+                            floor_tbl[child_name].connections[connection_p.Name] = connection_p.Position
+                        end
+                    end
+                    
+                    floor_tbl[child_name][part_name] = {connections = room_connections, room = part}
                 end
             elseif child:IsA('Part') then
-                local key = (KEY_FORMAT_FLOOR_ROOM):format(id, child.Name)
+                local key = (KEY_FORMAT_FLOOR_ROOM):format(id, child_name)
                 assert(not mappings[key], `Collision detected while mapping asylum! (F-R "{key}" already exists)`)
 
                 mappings[key] = child
-                floor_tbl[key] = child
+                floor_tbl[child_name] = {connections = {}, room = child}
             end
         end
     end
@@ -84,7 +102,10 @@ end
 type self = {
     --]] Properties
     mappings: {[string]: Part|Folder},
-    mappings_sorted: {[string]: {[string]: Part|Folder}},
+    mappings_sorted: {[number]: {[string]: {
+        connections: {[string]: Vector3}?,
+        room: Instance
+    }}},
     
     --> Signals
     room_entered: sawdust.SawdustSignal<Player, string>,
@@ -111,7 +132,9 @@ type self = {
     --]] Methods
     Fetch: (id: string) -> (Part|Folder)?,
     GetFloor: (floor_id: number) -> Part?,
-    GetRoom: (floor_id: number, room_id: string, specify: string?) -> Part?,
+    GetRoom: (floor_id: number, room_id: string, section_id: string?) -> Part?,
+
+    GetConnectedRooms: (floor_id: number, room_id: string, section_id: string?) -> { [string]: Vector3 },
 
     PlayerEnteredRoom: (player: Player, room_id: string) -> nil,
     PlayerExitedRoom: (player: Player, room_id: string) -> nil,
@@ -119,7 +142,7 @@ type self = {
 
 return builder.new('asylum')
     :init(function(self, deps)
-        local mappings, sorted_mappings = generateMappings()
+        local mappings, sorted_mappings = GenerateMappings()
         self.mappings = mappings
         self.mappings_sorted = sorted_mappings --> Make accessors
 
@@ -147,11 +170,28 @@ return builder.new('asylum')
     --> Room/Floor Fetch
     :method('Fetch', function(self: self, id: string): (Part|Folder)?
         return self.mappings[id] end)
-    :method('GetFloor', function(self: self, floorId: number): Part?
-        return self.Fetch(tostring(floorId)) :: Part? end)
-    :method('GetRoom', function(self: self, floorId: number, roomId: string, specify: string?): (Part|Folder)?
-        local key = specify and (KEY_FORMAT_FLOOR_FOLDER_ROOM):format(floorId, roomId, specify) or (KEY_FORMAT_FLOOR_ROOM):format(floorId, roomId)
+    :method('GetFloor', function(self: self, floor_id: number): Part?
+        return self.Fetch(tostring(floor_id)) :: Part? end)
+    :method('GetRoom', function(self: self, floor_id: number, room_id: string, section_id: string?): (Part|Folder)?
+        local key = section_id 
+            and (KEY_FORMAT_FLOOR_FOLDER_ROOM):format(floor_id, room_id, section_id) 
+            or  (KEY_FORMAT_FLOOR_ROOM):format(floor_id, room_id)
+
         return self.Fetch(key) end)
+
+    --> Connections
+    :method('GetConnectedRooms', function(self: self, floor_id: number, room_id: string, section_id: string?)
+        print(self.mappings_sorted, `{floor_id}: {type(floor_id)}`, `{room_id}: {type(room_id)}`)
+        local room_data = self.mappings_sorted[tonumber(floor_id) or 1][room_id]
+        
+        --> Fetch Connections
+        local connections: typeof(room_data.connections) = 
+            if section_id then (room_data[section_id] and room_data[section_id] or room_data).connections
+                          else room_data.connections
+        
+        --> 
+        return connections
+    end)
 
     --> Player Tracking
     :method('PlayerEnteredRoom', function(self: self, player: Player, room_id: string)
@@ -178,6 +218,7 @@ return builder.new('asylum')
     end)
 
     :start(function(self: self)
+        print("Starting Asylum...")
         local last_update = tick()
 
         local function CheckInBounds(player: Player, bounds: Part|Folder)
@@ -210,7 +251,7 @@ return builder.new('asylum')
             local this_tick = tick()
             local difference = this_tick-last_update
 
-            if difference<60/45 then --> 30fps update
+            if difference<30/60 then --> 30fps update
                 return end
             last_update = this_tick
 
@@ -280,4 +321,6 @@ return builder.new('asylum')
                 end)()
             end
         end)
+
+        print("Asylum Started!!")
     end)
