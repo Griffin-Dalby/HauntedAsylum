@@ -25,6 +25,7 @@ local _debug = false
 local sense_packages = {
     ['player'] = script:WaitForChild('sense.player'),
     ['physical'] = script:WaitForChild('sense.physical'),
+    ['asylum'] = script:WaitForChild('sense.asylum')
 }
 
 local sData_flags = {
@@ -71,6 +72,9 @@ local package_verifier = {
     end,
     ['physical'] = function(settings: sense_types.SensePhysicalSettings, entity_id: string)
         local log_tag = `[{entity_id}.package.physical]`
+    end,
+    ['asylum'] = function(settings: sense_types.SenseAsylumSettings, entity_id: string)
+        local log_tag = `[{entity_id}.package.asylum]`
     end
 }
 function verifySettings(settings: sense_types.SensePackages, entity_id: string)

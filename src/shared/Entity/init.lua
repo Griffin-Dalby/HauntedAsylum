@@ -47,7 +47,7 @@ local is_client = runService:IsClient()
 
 --]] Variables
 --]] Entity
-local entity = {}
+local entity = {} :: types.methods_entity<any>
 entity.__index = entity
 
 --> Forward Exports
@@ -109,10 +109,14 @@ function entity.new<TStEnv>(id: string, sense_packages: sense_types.SensePackage
     return self
 end
 
---[[ entity:defineAnimation(state: string, animation_id: number)
-    This will create an animation based off the animation id, and attach
-    it to the animation system, where it'll automatically play when
-    the state that's defined is active in the state manager. ]]
+--[[
+    Creates an animation based off the Animation ID, and attaches it
+    to the animation system, where it'll automatically play when it's
+    state is active.
+
+    @param state State that activates this animation
+    @param animation_id ID of the Animation that will play
+]]
 function entity:defineAnimation(state: string, animation_id: number)
     assert(animation_id, `:defineAnimation() missing animation_id!`)
     assert(type(animation_id) == 'number',

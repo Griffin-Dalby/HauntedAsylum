@@ -20,12 +20,16 @@ local types = {}
     
     Internally it's hooked into the FSM environment with cortex.hook(),
     however that's intentionally omitted from this type definition. ]]
-local cortex = {}
-cortex.__index = cortex
-
 export type SensePackages = {
     player: SensePlayerSettings?,
     physical: SensePhysicalSettings?,
+    asylum: SenseAsylumSettings?,
+}
+
+export type methods_cortex = {
+    __index: methods_cortex,
+    
+    injectRig: (self: EntityCortex, rig: {}) -> nil,
 }
 
 export type self_cortex = {
@@ -33,11 +37,10 @@ export type self_cortex = {
     __body: Model?,
 
     player: PlayerSense,
-    physical: PhysicalSense
+    physical: PhysicalSense,
+    asylum: AsylumSense,
 }
-export type EntityCortex = typeof(setmetatable({} :: self_cortex, cortex))
-
-function cortex:injectRig(rig: {}) end
+export type EntityCortex = typeof(setmetatable({} :: self_cortex, {} :: methods_cortex))
 
 --[[ PLAYER ]]--
 --[[ This section covers the entity's player senses, which make it
@@ -56,30 +59,30 @@ export type SensePlayerSettings = {
     Metamethod injection that provides abstractions for data found
     in the player sense.
     
-    ### sort`() -> { [number]: { player: Player, dist: number } }`
+    ### `sort() -> { [number]: { player: Player, dist: number } }`
      Sorts the sense data from closest to furthest from the entity. 
      
-    ### closest`() -> { player: Player, dist: number }`
+    ### `closest() -> { player: Player, dist: number }`
      Provides the absolute closest player to the entity.
      
-    ### enforceSDF`(flag_name: string, flag_value: any) -> DataAugmentController`
+    ### `enforceSDF(flag_name: string, flag_value: any) -> player_DataAugmentController`
      Drops all players in the table that fail the SDF comparison.
     
     **flag_name: `string`**: The flag to check within the player's session data.<br>
     **flag_value: `any`**: What value to check against in order to determine success/failure
     
 ]]
-export type DataAugmentController = {
+export type player_DataAugmentController = {
     sort: ()->{[number]: {player: Player, dist: number}},
     closest: ()->{player: Player, dist: number},
-    enforceSDF: (flag_name: string, flag_value: any)->DataAugmentController
+    enforceSDF: (flag_name: string, flag_value: any)->player_DataAugmentController
 }
 
 export type methods_sense_player = {
     __index: methods_sense_player,
 
     findPlayer: (self: PlayerSense) -> {[Player]: Model},
-    findPlayersInRadius: (self: PlayerSense, radius: number) -> {[Player]: number} & DataAugmentController,
+    findPlayersInRadius: (self: PlayerSense, radius: number) -> {[Player]: number} & player_DataAugmentController,
 
     adheresSDF: (self: PlayerSense, player: Player, flag_name: string, expect_value: any) -> boolean,
     getPlayerFromRoot: (self: PlayerSense, root_part: BasePart) -> Player?,
@@ -91,48 +94,53 @@ export type self_sense_player = {
 }
 export type PlayerSense = typeof(setmetatable({} :: self_sense_player, {} :: methods_sense_player))
 
-function sense_player:findPlayers()
-    : {[Player]: Model} end
-function sense_player:findPlayersInRadius(radius: number)
-    : {[Player]: number} & DataAugmentController end --> Inject DAC
-
-function sense_player:adheresSDF(player: Player, flag_name: string, expect_value: any)
-    : boolean end
-function sense_player:getPlayerFromRoot(rootPart: BasePart)
-    : Player? end
--- function sense_player:findPlayersInArea(area: Part)
---     : {[Player]: Model} end
-
 --[[ PHYSICAL ]]--
 --[[ This section covers the entity's physical senses, which allow
     easier spatial awareness, quick in-world lookups, and positioning
     data. ]]
-local sense_physical = {}
-sense_physical.__index = sense_physical
-
 export type SensePhysicalSettings = {
+    
+}
 
+export type methods_sense_physical = {
+    __index: sense_physical,
+
+    getDiff: (self: PhysicalSense, point: Vector3) -> Vector3,
+    getDistance: (self: PhysicalSense, point: Vector3) -> number,
+    getDirection: (self: PhysicalSense, point: Vector3) -> Vector3,
 }
 
 export type self_sense_physical = {
 
 }
-export type PhysicalSense = typeof(setmetatable({}, sense_physical))
 
-function sense_physical:getDiff(point: Vector3) : Vector3 end
-function sense_physical:getDistance(point: Vector3) : number end
-function sense_physical:getDirection(point: Vector3) : Vector3 end
+export type PhysicalSense = typeof(setmetatable({} :: self_sense_physical, {} :: methods_sense_physical))
 
---[[ ENVIRONMENT ]]--
---[[ This section covers the entity's environmental senses, which
+--[[ ASYLUM ]]--
+--[[ This section covers the entity's asylum senses, which
     allow them to understand and interact with their surroundings
     easier. ]]
-local sense_environment = {}
-sense_environment.__index = sense_environment
-
-export type self_sense_environment = {
+export type SenseAsylumSettings = {
 
 }
-export type EnvironmentSense = typeof(setmetatable({} :: self_sense_environment, sense_environment))
+
+export type methods_sense_asylum = {
+    __index: methods_sense_asylum,
+
+    Fetch: (id: string) -> (Part|Folder)?,
+    GetFloor: (floor_id: number) -> Part?,
+    GetRoom: (floor_id: number, room_id: string, specify: string?) -> Part?,
+
+    GetConnectedRooms: (floor_id: number, room_id: string, section_id: string?) -> { [string]: Vector3 },
+    GetSortedMappings: () -> {[number]: {[string]: {
+        connections: { [string]: Vector3 },
+        room: Instance?
+    }}}
+}
+
+export type self_sense_asylum = {
+    
+}
+export type AsylumSense = typeof(setmetatable({} :: self_sense_asylum, {} :: methods_sense_asylum))
 
 return types

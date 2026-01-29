@@ -21,7 +21,7 @@ local types = require(script.Parent.Parent.types)
 --]] Functions
 --]] Animator
 
-local animator = {}
+local animator = {} :: types.methods_animator
 animator.__index = animator
 
 --[[ animator.new() : EntityAnimator

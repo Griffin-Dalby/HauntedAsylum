@@ -175,7 +175,8 @@ return function(cortex: sense_types.EntityCortex) : sense_types.PlayerSense
         --> Sanitize
         assert(session_cache:hasEntry(player), `Failed to find session data for player {player.Name}.{player.UserId}`)
         local p_session_data = session_cache:getValue(player)
-        local aware_flags = cortex.__settings.player.sessionDataFlags
+        local aware_flags = (cortex.__settings.player or {sessionDataFlags = {}}).sessionDataFlags
+        
         if not table.find(aware_flags, flag_name) then
             warn(debug.traceback(`PlayerSense:adheresSDF() provided unscoped flag_name "{flag_name}"! No action taken.`))
             return; end

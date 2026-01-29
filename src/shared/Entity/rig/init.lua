@@ -24,7 +24,7 @@ local is_client = runService:IsClient()
 
 --]] Variables
 --]] Rig
-local rig = {}
+local rig = {} :: types.methods_rig
 rig.__index = rig
 
 --[[

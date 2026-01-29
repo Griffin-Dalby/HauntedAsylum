@@ -32,7 +32,7 @@ local world_channel = networking.getChannel('world')
 --]] Variables
 --]] Functions
 --]] Module
-local navigator = {}
+local navigator = {} :: types.methods_navigator
 navigator.__index = navigator
 
 --[[ navigator.new(entity: Entity)

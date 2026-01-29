@@ -27,7 +27,7 @@ local metrics_enabled = runService:IsStudio() and replicatedFirst.__tools.brainv
 --]] Variables
 --]] Functions
 --]] Module
-local metrics = {}
+local metrics = {} :: entity_types.methods_metrics
 metrics.__index = metrics
 
 function metrics.hook(entity: entity_types.Entity<{}>) : entity_types.EntityMetrics

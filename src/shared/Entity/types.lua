@@ -1,4 +1,3 @@
---!nocheck
 --[[
 
     Entity Object Types
@@ -21,13 +20,18 @@ local learn_types = require(script.Parent.learning.types)
 local __ = {}
 
 --[[ ENTITY OBJECT ]]--
-local entity = {}
-entity.__index = entity
+export type methods_entity<TStEnv> = {
+    __index: methods_entity<TStEnv>,
+    new: (id: string, senses: sense_types.SensePackages) -> Entity<TStEnv>,
+
+    defineAnimation: (self: Entity<TStEnv>, state: string, animation_id: number) -> nil,
+    spawn: (self: Entity<TStEnv>, spawn_point: BasePart | Vector3) -> nil
+}
 
 export type self_entity<TStEnv> = {
     asset: entity_template.EntityTemplate,
     id: string,
-    fsm: fsm_types.StateMachine<FSM_Cortex, TStEnv>,
+    fsm: fsm_types.StateMachine<FSM_Cortex>,
 
     idle: fsm_types.SawdustState<FSM_Cortex, TStEnv>,
     chase: fsm_types.SawdustState<FSM_Cortex, TStEnv>,
@@ -36,20 +40,20 @@ export type self_entity<TStEnv> = {
     nav: EntityNavigator,
 }
 
-export type Entity<TStEnv> = typeof(setmetatable({} :: self_entity<TStEnv>, entity))
-
-function entity.new(id: string, senses: sense_types.SensePackages) end
-function entity:defineAnimation(state: string, animation_id: number) end
-function entity:spawn(spawn_part: BasePart?) end
+export type Entity<TStEnv> = typeof(setmetatable({} :: self_entity<TStEnv>, {} :: methods_entity<TStEnv>))
 
 --[[ ENTITY RIG ]]--
-local rig = {}
-rig.__index = rig
-
 export type RigData = {
     id: string,
     model: Model,
     spawns: { BasePart }
+}
+
+export type methods_rig = {
+    __index: methods_rig,
+
+    new: (rig_data: RigData) -> EntityRig,
+    spawn: (self: EntityRig, spawn_point: BasePart | Vector3) -> nil
 }
 
 export type self_rig = {
@@ -57,49 +61,49 @@ export type self_rig = {
     spawns: { BasePart },
     animator: EntityAnimator
 }
-export type EntityRig = typeof(setmetatable({} :: self_rig, rig))
-
-function rig.new(rig_data: RigData) : EntityRig end
-function rig:spawn(spawn_part: BasePart?) end
+export type EntityRig = typeof(setmetatable({} :: self_rig, {} :: methods_rig))
 
 --[[ ENTITY ANIMATOR ]]--
-local animator = {}
-animator.__index = animator
+export type methods_animator = {
+    __index: methods_animator,
+
+    new: () -> EntityAnimator,
+
+    defineAnimation: (self: EntityAnimator, state: string, animation: Animation) -> nil
+}
 
 export type self_animator = {
     animations: {[string]: Animation}
 }
-export type EntityAnimator = typeof(setmetatable({} :: self_animator, animator))
-
-function animator.new() : EntityAnimator end
-function animator:defineAnimation(state: string, animation: Animation) end
+export type EntityAnimator = typeof(setmetatable({} :: self_animator, {} :: methods_animator))
 
 --[[ ENTITY NAVIGATOR ]]--
-local navigator = {}
-navigator.__index = navigator
+export type methods_navigator = {
+    __index: methods_navigator,
+
+    new: (rig: EntityRig) -> EntityNavigator
+}
 
 export type self_navigator = {
     rig: EntityRig,
 
     target: Player?,
 }
-export type EntityNavigator = typeof(setmetatable({} :: self_navigator, navigator))
-
-function navigator.new(rig: EntityRig) : EntityNavigator end
+export type EntityNavigator = typeof(setmetatable({} :: self_navigator, {} :: methods_navigator))
 
 --[[ ENTITY METRICS ]]--
-local metrics = {}
-metrics.__index = metrics
+export type methods_metrics = {
+    __index: methods_metrics,
+
+    parseParameterUpdate: (parameters: { [string]: learn_types.LearningParameter }) -> nil
+}
 
 export type self_metrics = {
     parameter: {
         [number]: { [string]: number, } --> Track value of each parameter
     }
 }
-export type EntityMetrics = typeof(setmetatable({} :: self_metrics, metrics))
-
-function metrics:parseParameterUpdate(parameters: { [string]: learn_types.LearningParameter })
-    end
+export type EntityMetrics = typeof(setmetatable({} :: self_metrics, {} :: methods_metrics))
 
 --[[ FSM INJECTION ]]--
 export type FSM_Cortex       = { 
